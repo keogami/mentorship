@@ -8,13 +8,13 @@ export function Footer() {
           </p>
           <div className="flex gap-4">
             <a
-              href="#"
+              href="/privacy"
               className="text-sm text-muted-foreground hover:text-foreground"
             >
               Privacy
             </a>
             <a
-              href="#"
+              href="/terms"
               className="text-sm text-muted-foreground hover:text-foreground"
             >
               Terms

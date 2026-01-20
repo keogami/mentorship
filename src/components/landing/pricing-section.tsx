@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -7,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 
 function CheckIcon() {
   return (
@@ -22,6 +22,7 @@ function CheckIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
       className="text-primary"
+      aria-hidden="true"
     >
       <path d="M20 6 9 17l-5-5" />
     </svg>

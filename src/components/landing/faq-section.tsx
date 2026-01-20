@@ -46,8 +46,8 @@ export function FAQSection() {
       </h2>
       <div className="mx-auto max-w-2xl">
         <Accordion type="single" collapsible>
-          {faqs.map((faq, index) => (
-            <AccordionItem key={index} value={`item-${index}`}>
+          {faqs.map((faq) => (
+            <AccordionItem key={faq.question} value={faq.question}>
               <AccordionTrigger>{faq.question}</AccordionTrigger>
               <AccordionContent>{faq.answer}</AccordionContent>
             </AccordionItem>
