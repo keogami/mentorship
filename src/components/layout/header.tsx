@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { AuthButton } from "@/components/auth/auth-button"
 
 export function Header() {
   return (
@@ -8,9 +9,12 @@ export function Header() {
         <Link href="/" className="text-xl font-bold">
           Mentorship
         </Link>
-        <Button asChild>
-          <a href="#pricing">Enroll Now</a>
-        </Button>
+        <div className="flex items-center gap-4">
+          <AuthButton />
+          <Button asChild>
+            <Link href="/subscribe">Enroll Now</Link>
+          </Button>
+        </div>
       </div>
     </header>
   )
