@@ -581,26 +581,27 @@ MENTOR_EMAIL=                 # for admin auth check
 ## Implementation Phases
 
 ### Phase 1: Foundation
-- [ ] Next.js project + shadcn/ui setup
-- [ ] Landing page with pricing table
-- [ ] Basic layout + navigation
+- [x] Next.js project + shadcn/ui setup
+- [x] Landing page with pricing table
+- [x] Basic layout + navigation
 
 ### Phase 2: Auth
-- [ ] NextAuth.js with GitHub + Google
-- [ ] Protected route middleware
-- [ ] Admin route protection (check MENTOR_EMAIL)
+- [x] NextAuth.js with GitHub + Google
+- [x] Protected route middleware
+- [x] Admin route protection (check MENTOR_EMAIL)
 
 ### Phase 3: Database
-- [ ] Drizzle ORM setup
-- [ ] Schema migration
-- [ ] Seed plans and mentor config defaults
+- [x] Drizzle ORM setup
+- [x] Schema migration
+- [x] Seed plans and mentor config defaults
 
 ### Phase 4: Subscription Flow
-- [ ] Plan selection UI with nudge towards Monthly
-- [ ] Razorpay subscription creation (3 plans)
-- [ ] Webhook handler for subscription events
-- [ ] User dashboard with status
-- [ ] Plan change request flow
+- [x] Plan selection UI with nudge towards Monthly
+- [x] Razorpay subscription creation (3 plans)
+- [x] Webhook handler for subscription events
+- [x] User dashboard with status
+- [x] Plan change request flow
+- [x] Subscription cancellation UI
 
 ### Phase 5: Booking
 - [ ] Google Calendar integration
