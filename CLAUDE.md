@@ -617,12 +617,43 @@ MENTOR_EMAIL=                 # for admin auth check
 - [ ] Coupon management
 - [ ] Config editor
 
-### Phase 7: Polish
+### Phase 7: System Polish
 - [ ] Email notifications (Resend)
 - [ ] Error handling
 - [ ] Loading states
 - [ ] Mobile responsiveness
 
+### Phase 8: UX Polish
+- [ ] Show dashboard when logged in
+- [ ] Show admin dashboard when logged in with mentor email
+- [ ] Dark mode
+- [ ] Add level coaching branding
+- [ ] Prefill email when razorpay subscription modal shows up
+- [ ] Branded 404 page
+- [ ] Make "Payment Pending" alert on dashboard reactive, to auto refresh when subscription goes through
+- [ ] Grab pfp when available during login
+- [ ] Remove "enroll now" button when subscription active
+- [ ] Redirect to "Change Plan" under settings if a subscribed user lands on `/subscribe`
+- [ ] Show back button in settings page
+- [ ] When clicking on "sign-in" button, redirect to dashboard after successful login
+
+### Phase 9: Security Audit
+- [ ] Check for common threats
+- [ ] Check for possible race conditions
+- [ ] Setup automated tools for security analysis
+
+Can start using the website beyond this phase, do a full production deployment
+
+---
+
+### Phase 10: PR Based testing
+- Setup preview deployment on pull request
+  - Create a matching branch on neon
+  - Create a matching branch on vercel
+  - Connect everything together
+
+### Phase 11: Analytics
+- [ ] Connect with posthog
 ---
 
 ## Commands
