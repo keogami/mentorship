@@ -619,6 +619,7 @@ MENTOR_EMAIL=                 # for admin auth check
 
 ### Phase 7: System Polish
 - [ ] Email notifications (Resend)
+  - [ ] Send .ics calendar invite attachment with booking confirmation (service account can't send Google Calendar invites without Domain-Wide Delegation)
 - [ ] Error handling
 - [ ] Loading states
 - [ ] Mobile responsiveness

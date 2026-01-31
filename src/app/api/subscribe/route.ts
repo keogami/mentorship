@@ -73,7 +73,7 @@ export async function POST(request: Request) {
   }
 
   // Check if user already has an active subscription
-  const [existingSubscription] = await db
+  const [existingActiveSubscription] = await db
     .select()
     .from(subscriptions)
     .where(
@@ -83,11 +83,36 @@ export async function POST(request: Request) {
       )
     );
 
-  if (existingSubscription) {
+  if (existingActiveSubscription) {
     return NextResponse.json(
       { error: "You already have an active subscription" },
       { status: 400 }
     );
+  }
+
+  // Clean up any abandoned pending subscriptions
+  const pendingSubscriptions = await db
+    .select()
+    .from(subscriptions)
+    .where(
+      and(
+        eq(subscriptions.userId, user.id),
+        eq(subscriptions.status, "pending")
+      )
+    );
+
+  for (const pending of pendingSubscriptions) {
+    // Cancel in Razorpay (ignore errors - may already be cancelled)
+    try {
+      await razorpay.subscriptions.cancel(pending.razorpaySubscriptionId);
+    } catch {
+      // Subscription may already be cancelled or in a state that can't be cancelled
+    }
+
+    // Delete from our database
+    await db
+      .delete(subscriptions)
+      .where(eq(subscriptions.id, pending.id));
   }
 
   // Create Razorpay subscription

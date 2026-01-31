@@ -18,6 +18,7 @@ export const sessions = pgTable("sessions", {
   subscriptionId: text("subscription_id").references(() => subscriptions.id),
   couponRedemptionId: text("coupon_redemption_id"), // FK added in coupons.ts to avoid circular deps
   googleEventId: text("google_event_id"),
+  meetLink: text("meet_link"),
   scheduledAt: timestamp("scheduled_at").notNull(),
   durationMinutes: integer("duration_minutes").default(50).notNull(),
   status: sessionStatusEnum("status").notNull(),
