@@ -8,6 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { PLANS, type Plan } from "@/lib/constants"
+import { cn } from "@/lib/utils"
 
 function CheckIcon() {
   return (
@@ -29,48 +31,81 @@ function CheckIcon() {
   )
 }
 
+function PlanCard({ plan }: { plan: Plan }) {
+  return (
+    <Card
+      className={cn(
+        "relative flex flex-col",
+        plan.featured && "border-primary shadow-lg scale-105"
+      )}
+    >
+      {plan.featured && (
+        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
+          Best Value
+        </Badge>
+      )}
+      <CardHeader className="text-center">
+        <CardTitle className="text-xl">{plan.name}</CardTitle>
+        <CardDescription>
+          {plan.sessionsPerPeriod} sessions/{plan.period}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex-1 text-center">
+        <div className="text-4xl font-bold">
+          {plan.displayPrice}
+          <span className="text-lg font-normal text-muted-foreground">
+            /{plan.period}
+          </span>
+        </div>
+        {plan.savingsMessage && (
+          <p className="mt-2 text-sm font-medium text-green-600">
+            {plan.savingsMessage}
+          </p>
+        )}
+        <ul className="mt-6 space-y-2 text-left">
+          {plan.features.map((feature) => (
+            <li key={feature} className="flex items-center gap-2 text-sm">
+              <CheckIcon /> {feature}
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+      <CardFooter>
+        <Button
+          className="w-full"
+          size="lg"
+          variant={plan.featured ? "default" : "outline"}
+          asChild
+        >
+          <a href={`/subscribe?plan=${plan.slug}`}>
+            {plan.featured ? "Get Started" : "Choose Plan"}
+          </a>
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
+
 export function PricingSection() {
   return (
     <section id="pricing" className="container mx-auto px-4 py-16 md:py-24">
-      <div className="mx-auto max-w-md">
-        <Card className="relative">
-          <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-            Limited Availability
-          </Badge>
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Monthly Mentorship</CardTitle>
-            <CardDescription>
-              Everything you need to accelerate your growth
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <div className="text-4xl font-bold">
-              &#8377;8,000
-              <span className="text-lg font-normal text-muted-foreground">
-                /month
-              </span>
-            </div>
-            <ul className="mt-6 space-y-2 text-left">
-              <li className="flex items-center gap-2">
-                <CheckIcon /> Daily 1:1 sessions
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckIcon /> Book up to 30 days ahead
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckIcon /> Flexible scheduling
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckIcon /> Cancel anytime
-              </li>
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full" size="lg" asChild>
-              <a href="/subscribe">Enroll Now</a>
-            </Button>
-          </CardFooter>
-        </Card>
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-12 text-center">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            Simple, transparent pricing
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground">
+            Choose the plan that fits your learning schedule
+          </p>
+        </div>
+        <div className="grid gap-6 md:grid-cols-3 md:items-center">
+          {PLANS.map((plan) => (
+            <PlanCard key={plan.id} plan={plan} />
+          ))}
+        </div>
+        <p className="mt-8 text-center text-sm text-muted-foreground">
+          All plans include 50-minute sessions with 4-hour cancellation policy
+        </p>
       </div>
     </section>
   )
