@@ -12,9 +12,11 @@ function getCalendar(): calendar_v3.Calendar {
     const keyJson = Buffer.from(keyBase64, "base64").toString("utf-8");
     const credentials = JSON.parse(keyJson);
 
-    const auth = new google.auth.GoogleAuth({
-      credentials,
+    const auth = new google.auth.JWT({
+      email: credentials.client_email,
+      key: credentials.private_key,
       scopes: ["https://www.googleapis.com/auth/calendar"],
+      subject: process.env.MENTOR_EMAIL,
     });
 
     calendarInstance = google.calendar({ version: "v3", auth });
@@ -46,67 +48,39 @@ export async function createCalendarEvent(
   const calendar = getCalendar();
   const calendarId = getCalendarId();
 
-  // Try to create event with Google Meet link
-  // Note: Meet links require Google Workspace; personal accounts may not support this
-  let event;
-  try {
-    event = await calendar.events.insert({
-      calendarId,
-      conferenceDataVersion: 1,
-      requestBody: {
-        summary,
-        description: `${description}\n\nAttendee: ${attendeeEmail}`,
-        start: {
-          dateTime: startTime.toISOString(),
-          timeZone: "Asia/Kolkata",
-        },
-        end: {
-          dateTime: endTime.toISOString(),
-          timeZone: "Asia/Kolkata",
-        },
-        conferenceData: {
-          createRequest: {
-            requestId: crypto.randomUUID(),
-            conferenceSolutionKey: {
-              type: "hangoutsMeet",
-            },
+  const event = await calendar.events.insert({
+    calendarId,
+    conferenceDataVersion: 1,
+    sendUpdates: "all",
+    requestBody: {
+      summary,
+      description,
+      attendees: [{ email: attendeeEmail }],
+      start: {
+        dateTime: startTime.toISOString(),
+        timeZone: "Asia/Kolkata",
+      },
+      end: {
+        dateTime: endTime.toISOString(),
+        timeZone: "Asia/Kolkata",
+      },
+      conferenceData: {
+        createRequest: {
+          requestId: crypto.randomUUID(),
+          conferenceSolutionKey: {
+            type: "hangoutsMeet",
           },
         },
-        reminders: {
-          useDefault: false,
-          overrides: [
-            { method: "email", minutes: 60 },
-            { method: "popup", minutes: 30 },
-          ],
-        },
       },
-    });
-  } catch (meetError) {
-    // Fall back to creating event without Meet link
-    console.warn("Could not create Meet link, creating event without it:", meetError);
-    event = await calendar.events.insert({
-      calendarId,
-      requestBody: {
-        summary,
-        description: `${description}\n\nAttendee: ${attendeeEmail}`,
-        start: {
-          dateTime: startTime.toISOString(),
-          timeZone: "Asia/Kolkata",
-        },
-        end: {
-          dateTime: endTime.toISOString(),
-          timeZone: "Asia/Kolkata",
-        },
-        reminders: {
-          useDefault: false,
-          overrides: [
-            { method: "email", minutes: 60 },
-            { method: "popup", minutes: 30 },
-          ],
-        },
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: "email", minutes: 60 },
+          { method: "popup", minutes: 30 },
+        ],
       },
-    });
-  }
+    },
+  });
 
   if (!event.data.id) {
     throw new Error("Failed to create calendar event");

@@ -604,11 +604,11 @@ MENTOR_EMAIL=                 # for admin auth check
 - [x] Subscription cancellation UI
 
 ### Phase 5: Booking
-- [ ] Google Calendar integration
-- [ ] Available slots API (respecting weekend access)
-- [ ] Booking flow with all validations
-- [ ] Cancel flow with 4hr rule
-- [ ] Session history
+- [x] Google Calendar integration
+- [x] Available slots API (respecting weekend access)
+- [x] Booking flow with all validations
+- [x] Cancel flow with 4hr rule
+- [x] Session history
 
 ### Phase 6: Mentor Admin
 - [ ] Admin dashboard
@@ -637,6 +637,9 @@ MENTOR_EMAIL=                 # for admin auth check
 - [ ] Redirect to "Change Plan" under settings if a subscribed user lands on `/subscribe`
 - [ ] Show back button in settings page
 - [ ] When clicking on "sign-in" button, redirect to dashboard after successful login
+- [ ] After the cancellation window closes, the cancel button gets disabled. Add modal to explain why they can't cancel anymore.
+- [ ] After the session ends, it is not updated as completed. Add cron job or something to make sure it is reflected correctly.
+- [ ] The order of session history needs to be latest-to-oldest
 
 ### Phase 9: Security Audit
 - [ ] Check for common threats
