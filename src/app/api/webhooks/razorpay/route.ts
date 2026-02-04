@@ -38,19 +38,21 @@ export async function POST(request: Request) {
 
   const payload: RazorpayWebhookPayload = JSON.parse(body);
   const razorpaySubscription = payload.payload.subscription.entity;
+  const razorpayPayment = payload.payload.payment?.entity;
 
   console.log(`Received webhook: ${payload.event}`, {
     subscriptionId: razorpaySubscription.id,
     status: razorpaySubscription.status,
+    paymentId: razorpayPayment?.id,
   });
 
   switch (payload.event) {
     case "subscription.activated":
-      await handleSubscriptionActivated(razorpaySubscription);
+      await handleSubscriptionActivated(razorpaySubscription, razorpayPayment);
       break;
 
     case "subscription.charged":
-      await handleSubscriptionCharged(razorpaySubscription);
+      await handleSubscriptionCharged(razorpaySubscription, razorpayPayment);
       break;
 
     case "subscription.cancelled":
@@ -73,8 +75,11 @@ export async function POST(request: Request) {
   return NextResponse.json({ received: true });
 }
 
+type RazorpayPaymentEntity = NonNullable<RazorpayWebhookPayload["payload"]["payment"]>["entity"];
+
 async function handleSubscriptionActivated(
-  razorpaySubscription: RazorpayWebhookPayload["payload"]["subscription"]["entity"]
+  razorpaySubscription: RazorpayWebhookPayload["payload"]["subscription"]["entity"],
+  razorpayPayment?: RazorpayPaymentEntity
 ) {
   const [subscription] = await db
     .select()
@@ -98,6 +103,9 @@ async function handleSubscriptionActivated(
       currentPeriodStart: periodStart,
       currentPeriodEnd: periodEnd,
       sessionsUsedThisPeriod: 0,
+      ...(razorpayPayment?.id && {
+        latestPaymentId: razorpayPayment.id,
+      }),
     })
     .where(eq(subscriptions.id, subscription.id));
 
@@ -105,7 +113,8 @@ async function handleSubscriptionActivated(
 }
 
 async function handleSubscriptionCharged(
-  razorpaySubscription: RazorpayWebhookPayload["payload"]["subscription"]["entity"]
+  razorpaySubscription: RazorpayWebhookPayload["payload"]["subscription"]["entity"],
+  razorpayPayment?: RazorpayPaymentEntity
 ) {
   const [subscription] = await db
     .select()
@@ -121,6 +130,9 @@ async function handleSubscriptionCharged(
 
   const periodStart = new Date(razorpaySubscription.current_start * 1000);
   const periodEnd = new Date(razorpaySubscription.current_end * 1000);
+  const paymentUpdate = razorpayPayment?.id
+    ? { latestPaymentId: razorpayPayment.id }
+    : {};
 
   // Check if there's a pending plan change
   if (subscription.pendingPlanChangeId) {
@@ -155,6 +167,7 @@ async function handleSubscriptionCharged(
           currentPeriodEnd: periodEnd,
           sessionsUsedThisPeriod: 0,
           status: "active",
+          ...paymentUpdate,
         })
         .where(eq(subscriptions.id, subscription.id));
 
@@ -171,6 +184,7 @@ async function handleSubscriptionCharged(
       currentPeriodEnd: periodEnd,
       sessionsUsedThisPeriod: 0,
       status: "active",
+      ...paymentUpdate,
     })
     .where(eq(subscriptions.id, subscription.id));
 

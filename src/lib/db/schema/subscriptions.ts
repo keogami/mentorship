@@ -23,6 +23,7 @@ export const subscriptions = pgTable("subscriptions", {
   currentPeriodEnd: timestamp("current_period_end").notNull(),
   sessionsUsedThisPeriod: integer("sessions_used_this_period").default(0).notNull(),
   pendingPlanChangeId: text("pending_plan_change_id").references(() => plans.id),
+  latestPaymentId: text("latest_payment_id"),
   cancelledAt: timestamp("cancelled_at"),
   cancelReason: text("cancel_reason"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

@@ -611,15 +611,14 @@ MENTOR_EMAIL=                 # for admin auth check
 - [x] Session history
 
 ### Phase 6: Mentor Admin
-- [ ] Admin dashboard
-- [ ] Calendar block management
-- [ ] User management (view, cancel)
+- [x] Admin dashboard
+- [x] Calendar block management
+- [x] User management (view, cancel)
 - [ ] Coupon management
-- [ ] Config editor
+- [x] Config editor
 
 ### Phase 7: System Polish
 - [ ] Email notifications (Resend)
-  - [ ] Send .ics calendar invite attachment with booking confirmation (service account can't send Google Calendar invites without Domain-Wide Delegation)
 - [ ] Error handling
 - [ ] Loading states
 - [ ] Mobile responsiveness
@@ -630,7 +629,7 @@ MENTOR_EMAIL=                 # for admin auth check
 - [ ] Dark mode
 - [ ] Add level coaching branding
 - [ ] Prefill email when razorpay subscription modal shows up
-- [ ] Branded 404 page
+- [ ] Branded 404 page, with a link back to last page if within host domain, otherwise to `/`
 - [ ] Make "Payment Pending" alert on dashboard reactive, to auto refresh when subscription goes through
 - [ ] Grab pfp when available during login
 - [ ] Remove "enroll now" button when subscription active
@@ -638,7 +637,7 @@ MENTOR_EMAIL=                 # for admin auth check
 - [ ] Show back button in settings page
 - [ ] When clicking on "sign-in" button, redirect to dashboard after successful login
 - [ ] After the cancellation window closes, the cancel button gets disabled. Add modal to explain why they can't cancel anymore.
-- [ ] After the session ends, it is not updated as completed. Add cron job or something to make sure it is reflected correctly.
+- [ ] After the session ends, it is not updated as completed. Add cron job or something to make sure it is reflected correctly. (can use qstash if not natively supported by nextjs)
 - [ ] The order of session history needs to be latest-to-oldest
 
 ### Phase 9: Security Audit
@@ -650,11 +649,12 @@ Can start using the website beyond this phase, do a full production deployment
 
 ---
 
-### Phase 10: PR Based testing
+### Phase 10: Repo management
 - Setup preview deployment on pull request
   - Create a matching branch on neon
   - Create a matching branch on vercel
   - Connect everything together
+- add Readme with architecture as mermaid
 
 ### Phase 11: Analytics
 - [ ] Connect with posthog
@@ -694,4 +694,4 @@ Build a mentorship booking platform with:
 
 7. **Coupons**: Generate codes that grant N free sessions. Sessions follow same rules as paid but can book any day (like Anytime).
 
-Start with Phase 1-3. Use Drizzle ORM for Postgres. Keep components minimal — single-mentor tool.
+Keep components minimal — single-mentor tool.
