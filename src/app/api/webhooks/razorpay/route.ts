@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { subscriptions, plans, sessions } from "@/lib/db/schema";
+import { subscriptions, plans, sessions, users } from "@/lib/db/schema";
 import { razorpay } from "@/lib/razorpay/client";
 import {
   verifyWebhookSignature,
@@ -8,6 +8,11 @@ import {
 } from "@/lib/razorpay/webhook";
 import { eq, and } from "drizzle-orm";
 import { deleteCalendarEvent } from "@/lib/google-calendar/client";
+import {
+  sendEmail,
+  subscriptionActivatedEmail,
+  subscriptionCancelledEmail,
+} from "@/lib/email";
 
 export async function POST(request: Request) {
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
@@ -109,6 +114,34 @@ async function handleSubscriptionActivated(
       }),
     })
     .where(eq(subscriptions.id, subscription.id));
+
+  // Send welcome email
+  try {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, subscription.userId));
+
+    const [plan] = await db
+      .select()
+      .from(plans)
+      .where(eq(plans.id, subscription.planId));
+
+    if (user && plan) {
+      const emailContent = subscriptionActivatedEmail({
+        userName: user.name,
+        planName: plan.name,
+        sessionsPerPeriod: plan.sessionsPerPeriod,
+        period: plan.period,
+      });
+      await sendEmail({
+        to: user.email,
+        ...emailContent,
+      });
+    }
+  } catch (err) {
+    console.error("Failed to send welcome email:", err);
+  }
 
   console.log(`Subscription activated: ${subscription.id}`);
 }
@@ -245,6 +278,32 @@ async function handleSubscriptionCancelled(
       cancelledAt: new Date(),
     })
     .where(eq(subscriptions.id, subscription.id));
+
+  // Send cancellation email
+  try {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, subscription.userId));
+
+    const [plan] = await db
+      .select()
+      .from(plans)
+      .where(eq(plans.id, subscription.planId));
+
+    if (user && plan) {
+      const emailContent = subscriptionCancelledEmail({
+        userName: user.name,
+        planName: plan.name,
+      });
+      await sendEmail({
+        to: user.email,
+        ...emailContent,
+      });
+    }
+  } catch (err) {
+    console.error("Failed to send cancellation email:", err);
+  }
 
   console.log(`Subscription cancelled: ${subscription.id}, cancelled ${pendingSessions.length} pending sessions`);
 }

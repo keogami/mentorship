@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { users, coupons, couponRedemptions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { createOrAddToPack } from "@/lib/packs";
+import { validateBody, redeemSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -16,14 +17,10 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { code } = body;
+  const parsed = validateBody(redeemSchema, body);
+  if (!parsed.success) return parsed.response;
 
-  if (!code || typeof code !== "string") {
-    return NextResponse.json(
-      { error: "Coupon code is required" },
-      { status: 400 }
-    );
-  }
+  const { code } = parsed.data;
 
   // Get user
   const [user] = await db
@@ -45,12 +42,11 @@ export async function POST(request: Request) {
     );
   }
 
-  // Find coupon (case-insensitive)
-  const normalizedCode = code.trim().toUpperCase();
+  // Find coupon (code is already normalized by schema)
   const allCoupons = await db
     .select()
     .from(coupons)
-    .where(eq(coupons.code, normalizedCode));
+    .where(eq(coupons.code, code));
 
   const coupon = allCoupons[0];
 

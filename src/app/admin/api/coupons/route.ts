@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { db } from "@/lib/db";
 import { coupons } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
+import { validateBody, createCouponSchema } from "@/lib/validation";
 
 export async function GET() {
   const adminCheck = await requireAdmin();
@@ -21,39 +22,19 @@ export async function POST(request: Request) {
   if (!adminCheck.authorized) return adminCheck.response;
 
   const body = await request.json();
-  const { code, sessionsGranted, expiresAt, maxUses } = body;
+  const parsed = validateBody(createCouponSchema, body);
+  if (!parsed.success) return parsed.response;
 
-  if (!code?.trim()) {
-    return NextResponse.json(
-      { error: "Coupon code is required" },
-      { status: 400 }
-    );
-  }
-
-  if (!Number.isInteger(sessionsGranted) || sessionsGranted < 1) {
-    return NextResponse.json(
-      { error: "sessionsGranted must be a positive integer" },
-      { status: 400 }
-    );
-  }
-
-  if (maxUses !== undefined && maxUses !== null) {
-    if (!Number.isInteger(maxUses) || maxUses < 1) {
-      return NextResponse.json(
-        { error: "maxUses must be a positive integer" },
-        { status: 400 }
-      );
-    }
-  }
+  const { code, sessionsGranted, expiresAt, maxUses } = parsed.data;
 
   try {
     const [coupon] = await db
       .insert(coupons)
       .values({
-        code: code.toUpperCase().trim(),
+        code,
         sessionsGranted,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
-        maxUses: maxUses || null,
+        maxUses: maxUses ?? null,
         active: false, // Coupons are inactive by default
       })
       .returning();

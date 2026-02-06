@@ -5,6 +5,8 @@ import { users, subscriptions, plans, sessions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { razorpay } from "@/lib/razorpay/client";
 import { deleteCalendarEvent } from "@/lib/google-calendar/client";
+import { sendEmail, mentorCancelledUserEmail } from "@/lib/email";
+import { validateBody, cancelUserSchema } from "@/lib/validation";
 
 export async function POST(
   request: Request,
@@ -15,14 +17,10 @@ export async function POST(
 
   const { id: userId } = await params;
   const body = await request.json();
-  const { reason, blockUser } = body;
+  const parsed = validateBody(cancelUserSchema, body);
+  if (!parsed.success) return parsed.response;
 
-  if (!reason?.trim()) {
-    return NextResponse.json(
-      { error: "Reason is required" },
-      { status: 400 }
-    );
-  }
+  const { reason, blockUser } = parsed.data;
 
   // 1. Find user
   const [user] = await db.select().from(users).where(eq(users.id, userId));
@@ -90,7 +88,7 @@ export async function POST(
     .set({
       status: "cancelled",
       cancelledAt: new Date(),
-      cancelReason: reason.trim(),
+      cancelReason: reason,
     })
     .where(eq(subscriptions.id, subscription.id));
 
@@ -125,6 +123,21 @@ export async function POST(
         cancelledAt: new Date(),
       })
       .where(eq(sessions.id, s.id));
+  }
+
+  // 9. Send termination email to user
+  try {
+    const emailContent = mentorCancelledUserEmail({
+      userName: user.name,
+      reason,
+      refundAmount: refundAmountInr,
+    });
+    await sendEmail({
+      to: user.email,
+      ...emailContent,
+    });
+  } catch (err) {
+    console.error("Failed to send termination email:", err);
   }
 
   return NextResponse.json({

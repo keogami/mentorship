@@ -716,11 +716,14 @@ Can start using the website beyond this phase, do a full production deployment
 ---
 
 ### Phase 10: Repo management
-- Setup preview deployment on pull request
-  - Create a matching branch on neon
-  - Create a matching branch on vercel
-  - Connect everything together
-- add Readme with architecture as mermaid
+- [ ] Setup preview deployment on pull request
+      - Create a matching branch on neon
+      - Create a matching branch on vercel
+      - Connect everything together
+- [ ] Add Readme with architecture as mermaid
+- [ ] Add validation to env file on startup with clear error message. Stop
+      bootup with _all_ missing keys and add docs in readme for each variable, giving
+      step for acquiring.
 
 ### Phase 11: Analytics
 - [ ] Connect with posthog

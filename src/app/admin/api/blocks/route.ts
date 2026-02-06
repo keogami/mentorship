@@ -7,10 +7,13 @@ import {
   subscriptionCredits,
   sessions,
   packs,
+  users,
 } from "@/lib/db/schema";
 import { eq, and, gte, lt, desc } from "drizzle-orm";
 import { differenceInCalendarDays, parseISO, addDays } from "date-fns";
 import { deleteCalendarEvent } from "@/lib/google-calendar/client";
+import { sendBulkEmails, mentorBlockNoticeEmail } from "@/lib/email";
+import { validateBody, createBlockSchema } from "@/lib/validation";
 
 export async function GET() {
   const adminCheck = await requireAdmin();
@@ -29,24 +32,13 @@ export async function POST(request: Request) {
   if (!adminCheck.authorized) return adminCheck.response;
 
   const body = await request.json();
-  const { startDate, endDate, reason } = body;
+  const parsed = validateBody(createBlockSchema, body);
+  if (!parsed.success) return parsed.response;
 
-  if (!startDate || !endDate || !reason?.trim()) {
-    return NextResponse.json(
-      { error: "startDate, endDate, and reason are required" },
-      { status: 400 }
-    );
-  }
+  const { startDate, endDate, reason } = parsed.data;
 
   const start = parseISO(startDate);
   const end = parseISO(endDate);
-
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-    return NextResponse.json(
-      { error: "Invalid date format. Use YYYY-MM-DD." },
-      { status: 400 }
-    );
-  }
 
   if (end < start) {
     return NextResponse.json(
@@ -61,7 +53,7 @@ export async function POST(request: Request) {
     .values({
       startDate,
       endDate,
-      reason: reason.trim(),
+      reason: reason,
     })
     .returning();
 
@@ -78,7 +70,7 @@ export async function POST(request: Request) {
     await db.insert(subscriptionCredits).values({
       subscriptionId: sub.id,
       days: blockDays,
-      reason: `Mentor unavailable: ${reason.trim()}`,
+      reason: `Mentor unavailable: ${reason}`,
       blockId: block.id,
     });
   }
@@ -167,7 +159,44 @@ export async function POST(request: Request) {
     }
   }
 
-  // 7. Mark as notified (email deferred to Phase 7)
+  // 7. Send notification emails to all active subscribers
+  try {
+    const emailMessages = await Promise.all(
+      activeSubs.map(async (sub) => {
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, sub.userId));
+
+        if (!user) return null;
+
+        const emailContent = mentorBlockNoticeEmail({
+          userName: user.name,
+          startDate: start,
+          endDate: end,
+          reason: reason,
+          bonusDays: blockDays,
+        });
+
+        return {
+          to: user.email,
+          ...emailContent,
+        };
+      })
+    );
+
+    const validMessages = emailMessages.filter(
+      (msg): msg is NonNullable<typeof msg> => msg !== null
+    );
+
+    if (validMessages.length > 0) {
+      await sendBulkEmails(validMessages);
+    }
+  } catch (err) {
+    console.error("Failed to send block notification emails:", err);
+  }
+
+  // 8. Mark as notified
   await db
     .update(mentorBlocks)
     .set({ usersNotified: true })

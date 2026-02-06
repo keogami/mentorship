@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users, plans, subscriptions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { validateBody, subscribeChangeSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -15,14 +16,10 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { newPlanId } = body;
+  const parsed = validateBody(subscribeChangeSchema, body);
+  if (!parsed.success) return parsed.response;
 
-  if (!newPlanId) {
-    return NextResponse.json(
-      { error: "New plan ID is required" },
-      { status: 400 }
-    );
-  }
+  const { newPlanId } = parsed.data;
 
   // Get user from database
   const [user] = await db

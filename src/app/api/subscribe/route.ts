@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { users, plans, subscriptions } from "@/lib/db/schema";
 import { razorpay } from "@/lib/razorpay/client";
 import { eq, and } from "drizzle-orm";
+import { validateBody, subscribeSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -16,14 +17,10 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { planId } = body;
+  const parsed = validateBody(subscribeSchema, body);
+  if (!parsed.success) return parsed.response;
 
-  if (!planId) {
-    return NextResponse.json(
-      { error: "Plan ID is required" },
-      { status: 400 }
-    );
-  }
+  const { planId } = parsed.data;
 
   // Get the plan
   const [plan] = await db

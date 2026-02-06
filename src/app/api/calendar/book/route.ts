@@ -13,6 +13,7 @@ import { MENTOR_CONFIG } from "@/lib/constants";
 import { addMinutes } from "date-fns";
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
+import { validateBody, bookSessionSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -25,22 +26,10 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { scheduledAt: scheduledAtStr } = body;
+  const parsed = validateBody(bookSessionSchema, body);
+  if (!parsed.success) return parsed.response;
 
-  if (!scheduledAtStr) {
-    return NextResponse.json(
-      { error: "scheduledAt is required" },
-      { status: 400 }
-    );
-  }
-
-  const scheduledAt = new Date(scheduledAtStr);
-  if (Number.isNaN(scheduledAt.getTime())) {
-    return NextResponse.json(
-      { error: "Invalid date format" },
-      { status: 400 }
-    );
-  }
+  const scheduledAt = new Date(parsed.data.scheduledAt);
 
   // Get user
   const [user] = await db
