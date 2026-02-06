@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getActivePack } from "@/lib/packs";
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("en-IN", {
@@ -80,6 +81,9 @@ export default async function DashboardPage() {
 
   const activeSubscription = subscriptionWithPlan[0];
 
+  // Fetch active pack
+  const activePack = await getActivePack(user.id);
+
   // If no active subscription, check for pending
   if (!activeSubscription) {
     const pendingSubscription = await db
@@ -125,15 +129,56 @@ export default async function DashboardPage() {
       );
     }
 
-    // No subscription at all
+    // No subscription — show pack if available, otherwise prompt to subscribe
     return (
       <div className="container mx-auto px-4 py-16">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-2xl space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome back, {user.name}
+            </p>
+          </div>
+
+          {activePack && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Session Pack</CardTitle>
+                    <CardDescription>
+                      Book any day including weekends
+                    </CardDescription>
+                  </div>
+                  <Badge>active</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">Sessions</p>
+                  <p className="text-2xl font-bold">
+                    {activePack.sessionsRemaining} / {activePack.sessionsTotal}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Expires {formatDate(activePack.expiresAt)}
+                  </p>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button asChild>
+                  <Link href="/book">Book Session</Link>
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
-              <CardTitle>No Active Subscription</CardTitle>
+              <CardTitle>{activePack ? "Get a Subscription" : "No Active Subscription"}</CardTitle>
               <CardDescription>
-                Subscribe to start booking mentorship sessions
+                {activePack
+                  ? "Subscribe for more sessions and better value"
+                  : "Subscribe to start booking mentorship sessions"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -142,9 +187,28 @@ export default async function DashboardPage() {
                 mentorship journey today.
               </p>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex gap-2">
               <Button asChild>
                 <Link href="/subscribe">View Plans</Link>
+              </Button>
+              {!activePack && (
+                <Button variant="outline" asChild>
+                  <Link href="/redeem">Redeem Coupon</Link>
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Redeem a Coupon</CardTitle>
+              <CardDescription>
+                Have a coupon code? Redeem it for session credits.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <Button variant="outline" asChild>
+                <Link href="/redeem">Redeem Coupon</Link>
               </Button>
             </CardFooter>
           </Card>
@@ -234,6 +298,33 @@ export default async function DashboardPage() {
           </CardFooter>
         </Card>
 
+        {activePack && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Session Pack</CardTitle>
+                  <CardDescription>
+                    Book any day including weekends
+                  </CardDescription>
+                </div>
+                <Badge>active</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Sessions</p>
+                <p className="text-2xl font-bold">
+                  {activePack.sessionsRemaining} / {activePack.sessionsTotal}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Expires {formatDate(activePack.expiresAt)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
@@ -244,6 +335,9 @@ export default async function DashboardPage() {
             </Button>
             <Button variant="outline" asChild className="justify-start">
               <Link href="/settings">Change Plan</Link>
+            </Button>
+            <Button variant="outline" asChild className="justify-start">
+              <Link href="/redeem">Redeem Coupon</Link>
             </Button>
           </CardContent>
         </Card>

@@ -54,6 +54,7 @@ export async function POST(request: Request) {
         sessionsGranted,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         maxUses: maxUses || null,
+        active: false, // Coupons are inactive by default
       })
       .returning();
 

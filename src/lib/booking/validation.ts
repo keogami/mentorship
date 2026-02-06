@@ -4,11 +4,13 @@ import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
 import { startOfDay, endOfDay, addDays, isWeekend, differenceInHours } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { MENTOR_CONFIG } from "@/lib/constants";
+import { getActivePack } from "@/lib/packs";
+import type { Pack } from "@/lib/db/types";
 
 const IST_TIMEZONE = "Asia/Kolkata";
 
 export type BookingError =
-  | "no_subscription"
+  | "no_session_source"
   | "subscription_not_active"
   | "subscription_expired"
   | "no_sessions_remaining"
@@ -20,6 +22,11 @@ export type BookingError =
   | "weekend_not_allowed"
   | "mentor_blocked"
   | "invalid_time_slot";
+
+export type UserBookingContext = {
+  subscription: SubscriptionWithPlan | null;
+  pack: Pack | null;
+};
 
 export type BookingValidationResult =
   | { valid: true }
@@ -197,6 +204,39 @@ export function getEffectiveEndDate(
   return addDays(currentPeriodEnd, bonusDays);
 }
 
+export async function getUserBookingContext(
+  userId: string
+): Promise<UserBookingContext> {
+  const [subscription, pack] = await Promise.all([
+    getUserSubscriptionWithPlan(userId),
+    getActivePack(userId),
+  ]);
+
+  return { subscription, pack };
+}
+
+export function determineDebitSource(
+  subscription: SubscriptionWithPlan | null,
+  pack: Pack | null,
+  scheduledAt: Date
+): "subscription" | "pack" {
+  if (subscription) {
+    const subRemaining =
+      subscription.plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod;
+
+    if (subRemaining > 0) {
+      const istDate = toZonedTime(scheduledAt, IST_TIMEZONE);
+      const isWeekendDay = isWeekend(istDate);
+
+      if (!isWeekendDay) return "subscription";
+      if (subscription.plan.weekendAccess) return "subscription";
+      // Weekend + weekday-only plan → fall through to pack
+    }
+  }
+
+  return "pack";
+}
+
 export function isWithinBookingWindow(
   scheduledAt: Date,
   windowDays: number = MENTOR_CONFIG.bookingWindowDays
@@ -223,33 +263,32 @@ export async function validateBooking(
 ): Promise<BookingValidationResult> {
   const config = await getMentorConfig();
 
-  // 1. Check subscription exists (getUserSubscriptionWithPlan only returns active subscriptions)
-  const subscription = await getUserSubscriptionWithPlan(userId);
-  if (!subscription) {
+  // 1. Check user has at least one session source
+  const { subscription, pack } = await getUserBookingContext(userId);
+  if (!subscription && !pack) {
     return {
       valid: false,
-      error: "no_subscription",
-      message: "You need an active subscription to book sessions",
+      error: "no_session_source",
+      message: "You need an active subscription or session pack to book",
     };
   }
 
-  // 3. Check subscription hasn't expired (with bonus days)
-  const effectiveEnd = getEffectiveEndDate(
-    subscription.currentPeriodEnd,
-    subscription.bonusDays
-  );
-  if (new Date() > effectiveEnd) {
-    return {
-      valid: false,
-      error: "subscription_expired",
-      message: "Your subscription period has ended",
-    };
+  // 2. Check subscription expiry (only if subscription exists)
+  let subRemaining = 0;
+  if (subscription) {
+    const effectiveEnd = getEffectiveEndDate(
+      subscription.currentPeriodEnd,
+      subscription.bonusDays
+    );
+    if (new Date() <= effectiveEnd) {
+      subRemaining =
+        subscription.plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod;
+    }
   }
 
-  // 4. Check sessions remaining
-  const sessionsRemaining =
-    subscription.plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod;
-  if (sessionsRemaining <= 0) {
+  // 3. Check total sessions remaining across both sources
+  const packRemaining = pack?.sessionsRemaining ?? 0;
+  if (subRemaining + packRemaining <= 0) {
     return {
       valid: false,
       error: "no_sessions_remaining",
@@ -257,7 +296,7 @@ export async function validateBooking(
     };
   }
 
-  // 5. Check no pending session
+  // 4. Check no pending session
   const hasPending = await hasPendingSession(userId);
   if (hasPending) {
     return {
@@ -267,7 +306,7 @@ export async function validateBooking(
     };
   }
 
-  // 6. Check slot is not in the past
+  // 5. Check slot is not in the past
   if (scheduledAt <= new Date()) {
     return {
       valid: false,
@@ -276,7 +315,7 @@ export async function validateBooking(
     };
   }
 
-  // 7. Check valid time slot (14:00-18:00 IST, on the hour)
+  // 6. Check valid time slot (14:00-18:00 IST, on the hour)
   if (!isValidTimeSlot(scheduledAt)) {
     return {
       valid: false,
@@ -285,7 +324,7 @@ export async function validateBooking(
     };
   }
 
-  // 8. Check within booking window
+  // 7. Check within booking window
   if (!isWithinBookingWindow(scheduledAt, config.bookingWindowDays)) {
     return {
       valid: false,
@@ -294,17 +333,19 @@ export async function validateBooking(
     };
   }
 
-  // 9. Check weekend access
+  // 8. Check weekend access — packs always grant weekend access
   const istDate = toZonedTime(scheduledAt, IST_TIMEZONE);
-  if (isWeekend(istDate) && !subscription.plan.weekendAccess) {
+  const weekendAccessAllowed =
+    (subscription && subscription.plan.weekendAccess) || !!pack;
+  if (isWeekend(istDate) && !weekendAccessAllowed) {
     return {
       valid: false,
       error: "weekend_not_allowed",
-      message: "Your plan does not include weekend booking. Upgrade to Anytime for weekend access.",
+      message: "Your plan does not include weekend booking. Upgrade to Anytime or get a session pack for weekends.",
     };
   }
 
-  // 10. Check mentor not blocked
+  // 9. Check mentor not blocked
   const blocked = await isDateBlocked(scheduledAt);
   if (blocked) {
     return {
@@ -314,7 +355,7 @@ export async function validateBooking(
     };
   }
 
-  // 11. Check user hasn't already booked this day
+  // 10. Check user hasn't already booked this day
   const hasBooked = await hasBookedOnDate(userId, scheduledAt);
   if (hasBooked) {
     return {
@@ -324,7 +365,7 @@ export async function validateBooking(
     };
   }
 
-  // 12. Check mentor capacity
+  // 11. Check mentor capacity
   const mentorSessions = await getMentorSessionCountOnDate(scheduledAt);
   if (mentorSessions >= config.maxSessionsPerDay) {
     return {

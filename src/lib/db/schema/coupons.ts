@@ -12,6 +12,18 @@ export const coupons = pgTable("coupons", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const packs = pgTable("packs", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  sessionsTotal: integer("sessions_total").notNull(),
+  sessionsRemaining: integer("sessions_remaining").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Track which users have redeemed which coupons (each user can only redeem a coupon once)
 export const couponRedemptions = pgTable("coupon_redemptions", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   couponId: text("coupon_id")
@@ -20,8 +32,5 @@ export const couponRedemptions = pgTable("coupon_redemptions", {
   userId: text("user_id")
     .notNull()
     .references(() => users.id),
-  sessionsGranted: integer("sessions_granted").notNull(),
-  sessionsRemaining: integer("sessions_remaining").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  redeemedAt: timestamp("redeemed_at").defaultNow().notNull(),
 });

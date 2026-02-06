@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { users, sessions, subscriptions } from "@/lib/db/schema";
+import { users, sessions, subscriptions, packs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import {
   validateBooking,
-  getUserSubscriptionWithPlan,
+  getUserBookingContext,
+  determineDebitSource,
 } from "@/lib/booking";
 import { createCalendarEvent } from "@/lib/google-calendar/client";
 import { MENTOR_CONFIG } from "@/lib/constants";
@@ -70,14 +71,16 @@ export async function POST(request: Request) {
     );
   }
 
-  // Get subscription for session creation
-  const subscription = await getUserSubscriptionWithPlan(user.id);
-  if (!subscription) {
+  // Get booking context to determine debit source
+  const { subscription, pack } = await getUserBookingContext(user.id);
+  if (!subscription && !pack) {
     return NextResponse.json(
-      { error: "No active subscription found" },
+      { error: "No active subscription or session pack found" },
       { status: 400 }
     );
   }
+
+  const debitSource = determineDebitSource(subscription, pack, scheduledAt);
 
   // Create Google Calendar event with Meet link
   const endTime = addMinutes(scheduledAt, MENTOR_CONFIG.sessionDurationMinutes);
@@ -101,12 +104,13 @@ export async function POST(request: Request) {
     // Continue without calendar event - can be added later
   }
 
-  // Create session and update subscription
+  // Create session and debit the appropriate source
   const [newSession] = await db
     .insert(sessions)
     .values({
       userId: user.id,
-      subscriptionId: subscription.id,
+      subscriptionId: debitSource === "subscription" ? subscription!.id : null,
+      packId: debitSource === "pack" ? pack!.id : null,
       googleEventId,
       meetLink,
       scheduledAt,
@@ -115,12 +119,31 @@ export async function POST(request: Request) {
     })
     .returning();
 
-  await db
-    .update(subscriptions)
-    .set({
-      sessionsUsedThisPeriod: subscription.sessionsUsedThisPeriod + 1,
-    })
-    .where(eq(subscriptions.id, subscription.id));
+  if (debitSource === "subscription") {
+    await db
+      .update(subscriptions)
+      .set({
+        sessionsUsedThisPeriod: subscription!.sessionsUsedThisPeriod + 1,
+      })
+      .where(eq(subscriptions.id, subscription!.id));
+  } else {
+    await db
+      .update(packs)
+      .set({
+        sessionsRemaining: pack!.sessionsRemaining - 1,
+      })
+      .where(eq(packs.id, pack!.id));
+  }
+
+  // Calculate total remaining sessions
+  const subRemaining = subscription
+    ? subscription.plan.sessionsPerPeriod -
+      subscription.sessionsUsedThisPeriod -
+      (debitSource === "subscription" ? 1 : 0)
+    : 0;
+  const packRemaining = pack
+    ? pack.sessionsRemaining - (debitSource === "pack" ? 1 : 0)
+    : 0;
 
   return NextResponse.json({
     session: {
@@ -132,7 +155,6 @@ export async function POST(request: Request) {
       meetLink: newSession.meetLink,
       hasCalendarEvent: !!googleEventId,
     },
-    sessionsRemaining:
-      subscription.plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod - 1,
+    sessionsRemaining: subRemaining + packRemaining,
   });
 }

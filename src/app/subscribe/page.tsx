@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AuthGate } from "@/components/auth/auth-gate";
 import { PlanSelection } from "@/components/subscribe";
 
@@ -32,6 +33,14 @@ export default function SubscribePage() {
             </p>
           </div>
           <PlanSelection razorpayKeyId={razorpayKeyId} />
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              Have a coupon code?{" "}
+              <Link href="/redeem" className="underline">
+                Redeem it here
+              </Link>
+            </p>
+          </div>
         </div>
       </AuthGate>
     </div>

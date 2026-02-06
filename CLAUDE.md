@@ -71,35 +71,73 @@
 - **Mentor daily capacity**: 5 sessions/day (configurable in admin)
 - **Booking window**: 1-7 days ahead only
 - **Session duration**: 50 minutes (fixed)
-- **Weekend booking**: Anytime plan only
+- **Weekend booking**: Anytime plan or active pack
+- **Debit order**: Subscription sessions first, then pack sessions
 
 ### Booking Constraint Logic
 ```typescript
 function canBookSlot(user: User, slot: Date): boolean {
   const dayOfWeek = slot.getDay()
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6 // Sun or Sat
-  
-  if (user.plan.type === 'weekly_weekday' || user.plan.type === 'monthly_weekday') {
-    return !isWeekend // Mon-Fri only
-  }
-  
-  return true // Anytime can book any day
+
+  if (!isWeekend) return true // Weekdays always allowed
+
+  // Weekend: allowed if Anytime subscription OR active pack with sessions
+  if (user.subscription?.plan.type === 'anytime') return true
+  if (user.activePack?.sessions_remaining > 0) return true
+
+  return false
 }
 ```
 
 ### Cancellation Policy
 - **By mentee**: 4hr minimum notice required
-  - ≥4hr before: Session credited back to allowance
+  - ≥4hr before: Session credited back to original source (subscription or pack)
   - <4hr before: Session forfeited (counts as used)
   - UI: Cancel button disabled when <4hr remaining
 - **By mentor**: See "Mentor Blocks" section
 
+### Packs (Session Packs)
+A **pack** is a secondary session pool, independent of subscriptions. A user can have a subscription, a pack, or both.
+
+**How packs are obtained:**
+- **Coupons**: Mentor generates a coupon code → user redeems → sessions added to pack
+- **Bundles**: User purchases a bundle from `/packs` page (bundles TBD, not implemented yet)
+
+**Single-pack constraint:**
+- A user can only have **one active pack** at a time
+- If the user already has an active (non-expired) pack, new sessions are added to it (sessions_total and sessions_remaining both increase)
+- If no active pack exists, a new one is created
+- Expiry is not extended — it stays at the 1st of the next month from when the pack was originally created
+
+**Pack rules:**
+- Sessions can book any day (like Anytime — weekdays and weekends)
+- Same booking constraints: 1/day, 1 pending max
+- Packs always expire on the **1st of the next month** (regardless of when created)
+- No rollover — unused sessions are lost at expiry
+
+**Debit priority when booking:**
+1. Subscription sessions are debited first (if available and slot is valid for the plan)
+2. Pack sessions are debited only if subscription has no remaining sessions or can't cover the slot (e.g., weekend on a weekday plan)
+
+**Weekend access with packs:**
+- A user with only a weekday subscription sees weekdays only
+- A user with a pack (with or without subscription) sees all days including weekends
+- Weekend bookings always debit from the pack (weekday subscriptions can't cover weekends)
+
+**Cancellation credit-back:**
+- Session tracks which source was debited (subscription or pack)
+- On cancel with ≥4hr notice, the credit goes back to the original source
+
 ### Coupon System
-- Mentor can generate coupons that credit N free sessions
-- Coupons apply to new users (no active subscription required)
-- Credited sessions follow same rules: 1/day, no hoarding
-- Free sessions expire end of month (or configurable expiry)
-- Coupon sessions can book any day (treated as Anytime)
+- Mentor generates coupons that grant packs (N sessions)
+- Coupons work for any logged-in user (no subscription required)
+- Redeeming a coupon adds sessions to the user's active pack (or creates one if none exists)
+- Coupon discovery points:
+  - **`/redeem`**: Standalone page (linked directly by mentor)
+  - **`/redeem?code=WELCOME5`**: URL-prefilled (mentor shares full link)
+  - **`/subscribe`**: "Have a coupon?" input below plan cards
+  - **`/dashboard`**: "Redeem Coupon" section for existing users
 
 ---
 
@@ -134,8 +172,9 @@ Effective access until: Feb 6, 2025
 ```
 
 **Handling existing bookings during block:**
-- If mentor blocks dates with existing bookings: manual resolution
-- Mentor contacts affected users, cancels + refunds session credit
+- Sessions within blocked dates are auto-cancelled (`cancelled_by_mentor`)
+- Google Calendar events are deleted
+- Session credits are returned to the original source (subscription or pack)
 
 ### Mentor-Initiated Cancellation
 Mentor can cancel a user's subscription (toxic user, violations, etc.)
@@ -204,11 +243,11 @@ type Plan = {
 type Session = {
   id: string
   user_id: string
-  subscription_id?: string      // null if from coupon
-  coupon_redemption_id?: string // null if from subscription
+  subscription_id?: string      // set if debited from subscription
+  pack_id?: string              // set if debited from pack
   google_event_id: string
   scheduled_at: Date
-  duration_minutes: number      // 30
+  duration_minutes: number      // 50
   status: 'scheduled' | 'completed' | 'cancelled_by_user' | 'cancelled_by_mentor' | 'no_show'
   cancelled_at?: Date
   late_cancel: boolean          // true if <4hr notice
@@ -244,13 +283,14 @@ type Coupon = {
   created_at: Date
 }
 
-type CouponRedemption = {
+type Pack = {
   id: string
-  coupon_id: string
   user_id: string
-  sessions_granted: number
+  source: 'coupon' | 'bundle'
+  coupon_id?: string            // set if source = 'coupon'
+  sessions_total: number
   sessions_remaining: number
-  expires_at: Date              // end of month or custom
+  expires_at: Date              // always 1st of next month
   created_at: Date
 }
 
@@ -282,7 +322,9 @@ type MentorConfig = {
 ├─────────────────────────────────────────────────────────┤
 │  /login            GitHub / Google OAuth                │
 │  /subscribe        Plan selection → Razorpay checkout   │
-│  /redeem           Coupon code entry (no payment)       │
+│                    + "Have a coupon?" inline redeem     │
+│  /redeem           Coupon code entry → creates pack     │
+│  /packs            Session pack bundles (TBD)           │
 └─────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -332,8 +374,9 @@ DELETE /api/calendar/book/[id]     Cancel a session
 GET  /api/me                       Current user + subscription status
 GET  /api/sessions                 User's session history
 
-# Coupons
-POST /api/redeem                   Redeem coupon code
+# Packs & Coupons
+POST /api/redeem                   Redeem coupon code → creates pack
+GET  /api/packs                    User's active packs
 
 # Admin (protected)
 GET  /admin/api/stats              Dashboard stats
@@ -354,42 +397,52 @@ PATCH /admin/api/config            Update mentor config
 ### Book a Session
 ```sql
 BEGIN;
-  -- 1. Check user has active subscription with effective access
+  -- 1. Load subscription (if any) with effective access
   SELECT s.*, p.* FROM subscriptions s
   JOIN plans p ON s.plan_id = p.id
   WHERE s.user_id = $1 AND s.status = 'active'
   FOR UPDATE;
-  -- + check effective_end (with credits) > now
 
-  -- 2. Check sessions_used < plan.sessions_per_period
-  
-  -- 3. Check no pending session exists
-  SELECT 1 FROM sessions 
+  -- 2. Load active pack (if any)
+  SELECT * FROM packs
+  WHERE user_id = $1 AND sessions_remaining > 0 AND expires_at > NOW()
+  FOR UPDATE;
+
+  -- 3. Must have at least one source with sessions
+  -- subscription sessions remaining OR pack sessions remaining
+
+  -- 4. Check no pending session exists
+  SELECT 1 FROM sessions
   WHERE user_id = $1 AND status = 'scheduled';
   -- must return 0 rows
 
-  -- 4. Check date is within booking window (1-7 days)
-  
-  -- 5. Check weekend access if booking Sat/Sun
-  -- If plan.weekend_access = false AND day is Sat/Sun → reject
-  
-  -- 6. Check mentor capacity for that day
-  SELECT COUNT(*) FROM sessions 
+  -- 5. Check date is within booking window (1-7 days)
+
+  -- 6. Check weekend access if booking Sat/Sun
+  -- Allowed if: subscription.weekend_access = true OR active pack exists
+
+  -- 7. Check mentor capacity for that day
+  SELECT COUNT(*) FROM sessions
   WHERE DATE(scheduled_at) = $2 AND status = 'scheduled'
   FOR UPDATE;
   -- must be < max_sessions_per_day
 
-  -- 7. Check user hasn't booked this day already
-  SELECT 1 FROM sessions 
-  WHERE user_id = $1 AND DATE(scheduled_at) = $2 
+  -- 8. Check user hasn't booked this day already
+  SELECT 1 FROM sessions
+  WHERE user_id = $1 AND DATE(scheduled_at) = $2
   AND status IN ('scheduled', 'completed');
   -- must return 0 rows
 
-  -- 8. Create session + increment counter
-  INSERT INTO sessions (...);
-  UPDATE subscriptions SET sessions_used_this_period = sessions_used_this_period + 1;
-  
-  -- 9. Create Google Calendar event
+  -- 9. Determine debit source (priority: subscription first)
+  --    - If weekday AND subscription has sessions → debit subscription
+  --    - If weekend AND subscription is Anytime with sessions → debit subscription
+  --    - Otherwise → debit pack
+
+  -- 10. Create session with source reference
+  INSERT INTO sessions (subscription_id, pack_id, ...);
+  -- Increment/decrement the chosen source
+
+  -- 11. Create Google Calendar event
 COMMIT;
 ```
 
@@ -397,19 +450,23 @@ COMMIT;
 ```sql
 BEGIN;
   SELECT * FROM sessions WHERE id = $1 FOR UPDATE;
-  
+
   -- Check ownership
   -- Check status = 'scheduled'
-  
+
   IF scheduled_at - NOW() >= INTERVAL '4 hours' THEN
-    -- Graceful cancel: credit back
+    -- Graceful cancel: credit back to original source
     UPDATE sessions SET status = 'cancelled_by_user', late_cancel = false;
-    UPDATE subscriptions SET sessions_used_this_period = sessions_used_this_period - 1;
+    IF session.subscription_id IS NOT NULL THEN
+      UPDATE subscriptions SET sessions_used_this_period = sessions_used_this_period - 1;
+    ELSIF session.pack_id IS NOT NULL THEN
+      UPDATE packs SET sessions_remaining = sessions_remaining + 1;
+    END IF;
   ELSE
     -- Late cancel: no credit
     UPDATE sessions SET status = 'cancelled_by_user', late_cancel = true;
   END IF;
-  
+
   -- Delete Google Calendar event
 COMMIT;
 ```
@@ -610,12 +667,20 @@ MENTOR_EMAIL=                 # for admin auth check
 - [x] Cancel flow with 4hr rule
 - [x] Session history
 
-### Phase 6: Mentor Admin
+### Phase 6: Mentor Admin + Packs
 - [x] Admin dashboard
 - [x] Calendar block management
 - [x] User management (view, cancel)
-- [ ] Coupon management
 - [x] Config editor
+- [x] Pack system (DB schema, debit/credit logic)
+- [x] Update booking flow for pack debit priority
+- [x] Update cancel flow for pack credit-back
+- [x] Update calendar slots to show weekends when user has active pack
+- [x] Coupon management (admin create/list)
+- [x] Coupon redemption → pack creation (POST /api/redeem)
+- [x] `/redeem` page with `?code=` prefill support
+- [x] "Have a coupon?" input on `/subscribe`
+- [x] "Redeem Coupon" section on `/dashboard`
 
 ### Phase 7: System Polish
 - [ ] Email notifications (Resend)
@@ -624,6 +689,7 @@ MENTOR_EMAIL=                 # for admin auth check
 - [ ] Mobile responsiveness
 
 ### Phase 8: UX Polish
+- [ ] Use Zod for API validation everywhere
 - [ ] Show dashboard when logged in
 - [ ] Show admin dashboard when logged in with mentor email
 - [ ] Dark mode
@@ -692,6 +758,6 @@ Build a mentorship booking platform with:
 
 6. **Mentor Admin**: Dashboard with today's sessions, subscriber list, block management (with auto-credit), coupon system, user cancellation with pro-rata refund.
 
-7. **Coupons**: Generate codes that grant N free sessions. Sessions follow same rules as paid but can book any day (like Anytime).
+7. **Packs & Coupons**: Packs are secondary session pools (any day, expire 1st of month). Coupons create packs. Subscription sessions debited first, then pack. Redeemable via `/redeem`, `/subscribe` inline, and `/dashboard`.
 
 Keep components minimal — single-mentor tool.

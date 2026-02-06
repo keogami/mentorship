@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -21,6 +22,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type Coupon = {
   id: string;
@@ -31,6 +51,14 @@ type Coupon = {
   uses: number;
   active: boolean;
   createdAt: string;
+};
+
+type RedemptionRecord = {
+  id: string;
+  redeemedAt: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
 };
 
 type CouponsTabProps = {
@@ -45,13 +73,45 @@ function formatDate(dateStr: string): string {
   }).format(new Date(dateStr));
 }
 
+function formatDateTime(dateStr: string): string {
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(dateStr));
+}
+
 export function CouponsTab({ coupons }: CouponsTabProps) {
   const router = useRouter();
+
+  // Create form state
   const [code, setCode] = useState("");
   const [sessionsGranted, setSessionsGranted] = useState("");
   const [maxUses, setMaxUses] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+
+  // Edit state
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+  const [editCode, setEditCode] = useState("");
+  const [editSessionsGranted, setEditSessionsGranted] = useState("");
+  const [editMaxUses, setEditMaxUses] = useState("");
+  const [editExpiresAt, setEditExpiresAt] = useState("");
+  const [editActive, setEditActive] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Toggle/delete state
+  const [isToggling, setIsToggling] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  // History state
+  const [viewingHistoryCouponId, setViewingHistoryCouponId] = useState<string | null>(null);
+  const [redemptionHistory, setRedemptionHistory] = useState<RedemptionRecord[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Messages
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -78,7 +138,7 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
         throw new Error(data.error || "Failed to create coupon");
       }
 
-      setSuccess(`Coupon "${code.toUpperCase()}" created.`);
+      setSuccess(`Coupon "${code.toUpperCase()}" created (inactive by default).`);
       setCode("");
       setSessionsGranted("");
       setMaxUses("");
@@ -90,6 +150,115 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
       setIsCreating(false);
     }
   }
+
+  function openEditDialog(coupon: Coupon) {
+    setEditingCoupon(coupon);
+    setEditCode(coupon.code);
+    setEditSessionsGranted(coupon.sessionsGranted.toString());
+    setEditMaxUses(coupon.maxUses?.toString() ?? "");
+    setEditExpiresAt(coupon.expiresAt ? coupon.expiresAt.split("T")[0] : "");
+    setEditActive(coupon.active);
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingCoupon) return;
+
+    setIsEditing(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/admin/api/coupons/${editingCoupon.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: editCode,
+          sessionsGranted: parseInt(editSessionsGranted, 10),
+          maxUses: editMaxUses ? parseInt(editMaxUses, 10) : null,
+          expiresAt: editExpiresAt || null,
+          active: editActive,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update coupon");
+      }
+
+      setSuccess(`Coupon "${editCode.toUpperCase()}" updated.`);
+      setEditingCoupon(null);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsEditing(false);
+    }
+  }
+
+  async function handleToggleActive(coupon: Coupon) {
+    setIsToggling(coupon.id);
+    setError(null);
+
+    try {
+      const response = await fetch(`/admin/api/coupons/${coupon.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: !coupon.active }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update coupon");
+      }
+
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsToggling(null);
+    }
+  }
+
+  async function handleDelete(couponId: string) {
+    setIsDeleting(couponId);
+    setError(null);
+
+    try {
+      const response = await fetch(`/admin/api/coupons/${couponId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete coupon");
+      }
+
+      setSuccess("Coupon deleted.");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsDeleting(null);
+    }
+  }
+
+  async function handleViewHistory(couponId: string) {
+    setViewingHistoryCouponId(couponId);
+    setIsLoadingHistory(true);
+    setRedemptionHistory([]);
+
+    try {
+      const response = await fetch(`/admin/api/coupons/${couponId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setRedemptionHistory(data.redemptions);
+      }
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }
+
+  const viewingCoupon = coupons.find((c) => c.id === viewingHistoryCouponId);
 
   return (
     <div className="space-y-6">
@@ -109,7 +278,7 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
         <CardHeader>
           <CardTitle>Create Coupon</CardTitle>
           <CardDescription>
-            Generate a coupon code that grants free sessions.
+            Generate a coupon code that grants free sessions. New coupons are inactive by default.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -184,6 +353,7 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
                   <TableHead>Status</TableHead>
                   <TableHead>Expires</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -221,6 +391,66 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
                           : "Never"}
                       </TableCell>
                       <TableCell>{formatDate(coupon.createdAt)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleActive(coupon)}
+                            disabled={isToggling === coupon.id}
+                          >
+                            {isToggling === coupon.id
+                              ? "..."
+                              : coupon.active
+                              ? "Deactivate"
+                              : "Activate"}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditDialog(coupon)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewHistory(coupon.id)}
+                          >
+                            History
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                Delete
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Coupon</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete coupon &quot;{coupon.code}&quot;?
+                                  This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(coupon.id)}
+                                  disabled={isDeleting === coupon.id}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  {isDeleting === coupon.id ? "Deleting..." : "Delete"}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -229,6 +459,126 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
           </div>
         )}
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingCoupon} onOpenChange={(open) => !open && setEditingCoupon(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Coupon</DialogTitle>
+            <DialogDescription>
+              Update the coupon details below.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="editCode">Coupon Code</Label>
+              <Input
+                id="editCode"
+                value={editCode}
+                onChange={(e) => setEditCode(e.target.value)}
+                className="uppercase"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editSessionsGranted">Sessions Granted</Label>
+              <Input
+                id="editSessionsGranted"
+                type="number"
+                min="1"
+                value={editSessionsGranted}
+                onChange={(e) => setEditSessionsGranted(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editMaxUses">Max Uses (leave empty for unlimited)</Label>
+              <Input
+                id="editMaxUses"
+                type="number"
+                min="1"
+                placeholder="Unlimited"
+                value={editMaxUses}
+                onChange={(e) => setEditMaxUses(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editExpiresAt">Expires At (optional)</Label>
+              <Input
+                id="editExpiresAt"
+                type="date"
+                value={editExpiresAt}
+                onChange={(e) => setEditExpiresAt(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="editActive"
+                checked={editActive}
+                onCheckedChange={(checked) => setEditActive(checked === true)}
+              />
+              <Label htmlFor="editActive">Active</Label>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditingCoupon(null)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isEditing}>
+                {isEditing ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Redemption History Dialog */}
+      <Dialog
+        open={!!viewingHistoryCouponId}
+        onOpenChange={(open) => !open && setViewingHistoryCouponId(null)}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Redemption History</DialogTitle>
+            <DialogDescription>
+              {viewingCoupon && (
+                <>Users who have redeemed coupon &quot;{viewingCoupon.code}&quot;</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {isLoadingHistory ? (
+            <p className="text-muted-foreground py-4">Loading...</p>
+          ) : redemptionHistory.length === 0 ? (
+            <p className="text-muted-foreground py-4">No redemptions yet</p>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Redeemed At</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {redemptionHistory.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell>{r.userName}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {r.userEmail}
+                      </TableCell>
+                      <TableCell>{formatDateTime(r.redeemedAt)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

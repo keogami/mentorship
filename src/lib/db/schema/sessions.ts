@@ -1,6 +1,7 @@
 import { pgEnum, pgTable, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { subscriptions } from "./subscriptions";
+import { packs } from "./coupons";
 
 export const sessionStatusEnum = pgEnum("session_status", [
   "scheduled",
@@ -16,7 +17,7 @@ export const sessions = pgTable("sessions", {
     .notNull()
     .references(() => users.id),
   subscriptionId: text("subscription_id").references(() => subscriptions.id),
-  couponRedemptionId: text("coupon_redemption_id"), // FK added in coupons.ts to avoid circular deps
+  packId: text("pack_id").references(() => packs.id),
   googleEventId: text("google_event_id"),
   meetLink: text("meet_link"),
   scheduledAt: timestamp("scheduled_at").notNull(),

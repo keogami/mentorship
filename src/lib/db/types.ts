@@ -6,7 +6,7 @@ import type {
   subscriptionCredits,
   sessions,
   coupons,
-  couponRedemptions,
+  packs,
   mentorBlocks,
   mentorConfig,
 } from "./schema";
@@ -34,8 +34,8 @@ export type NewSession = InferInsertModel<typeof sessions>;
 export type Coupon = InferSelectModel<typeof coupons>;
 export type NewCoupon = InferInsertModel<typeof coupons>;
 
-export type CouponRedemption = InferSelectModel<typeof couponRedemptions>;
-export type NewCouponRedemption = InferInsertModel<typeof couponRedemptions>;
+export type Pack = InferSelectModel<typeof packs>;
+export type NewPack = InferInsertModel<typeof packs>;
 
 // Mentor types
 export type MentorBlock = InferSelectModel<typeof mentorBlocks>;

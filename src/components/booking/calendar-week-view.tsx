@@ -63,7 +63,7 @@ export function CalendarWeekView({
           )}
           {!userContext.weekendAccess && (
             <div className="text-muted-foreground">
-              Weekdays only (upgrade to Anytime for weekends)
+              Weekdays only (upgrade to Anytime or get a session pack for weekends)
             </div>
           )}
         </div>

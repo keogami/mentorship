@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { users, sessions, subscriptions } from "@/lib/db/schema";
+import { users, sessions, subscriptions, packs } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { canCancelWithCredit } from "@/lib/booking";
 import { deleteCalendarEvent } from "@/lib/google-calendar/client";
@@ -83,19 +83,35 @@ export async function DELETE(
     .where(eq(sessions.id, sessionId));
 
   // Credit back session if cancelled with sufficient notice
-  if (canGetCredit && bookingSession.subscriptionId) {
-    const [subscription] = await db
-      .select()
-      .from(subscriptions)
-      .where(eq(subscriptions.id, bookingSession.subscriptionId));
+  if (canGetCredit) {
+    if (bookingSession.subscriptionId) {
+      const [subscription] = await db
+        .select()
+        .from(subscriptions)
+        .where(eq(subscriptions.id, bookingSession.subscriptionId));
 
-    if (subscription && subscription.sessionsUsedThisPeriod > 0) {
-      await db
-        .update(subscriptions)
-        .set({
-          sessionsUsedThisPeriod: subscription.sessionsUsedThisPeriod - 1,
-        })
-        .where(eq(subscriptions.id, subscription.id));
+      if (subscription && subscription.sessionsUsedThisPeriod > 0) {
+        await db
+          .update(subscriptions)
+          .set({
+            sessionsUsedThisPeriod: subscription.sessionsUsedThisPeriod - 1,
+          })
+          .where(eq(subscriptions.id, subscription.id));
+      }
+    } else if (bookingSession.packId) {
+      const [pack] = await db
+        .select()
+        .from(packs)
+        .where(eq(packs.id, bookingSession.packId));
+
+      if (pack) {
+        await db
+          .update(packs)
+          .set({
+            sessionsRemaining: pack.sessionsRemaining + 1,
+          })
+          .where(eq(packs.id, pack.id));
+      }
     }
   }
 

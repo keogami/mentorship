@@ -17,6 +17,7 @@ import {
   getUserSubscriptionWithPlan,
   hasPendingSession,
 } from "@/lib/booking";
+import { getActivePack } from "@/lib/packs";
 import { BookingClient } from "./booking-client";
 
 export default async function BookPage() {
@@ -37,13 +38,26 @@ export default async function BookPage() {
     if (user) {
       userId = user.id;
 
-      const subscription = await getUserSubscriptionWithPlan(user.id);
+      const [subscription, activePack] = await Promise.all([
+        getUserSubscriptionWithPlan(user.id),
+        getActivePack(user.id),
+      ]);
+
       if (subscription && subscription.status === "active") {
         hasActiveSubscription = true;
         weekendAccess = subscription.plan.weekendAccess;
         sessionsRemaining =
           subscription.plan.sessionsPerPeriod -
           subscription.sessionsUsedThisPeriod;
+      }
+
+      if (activePack) {
+        hasActiveSubscription = true;
+        weekendAccess = true;
+        sessionsRemaining += activePack.sessionsRemaining;
+      }
+
+      if (hasActiveSubscription) {
         userHasPendingSession = await hasPendingSession(user.id);
       }
     }
@@ -101,17 +115,20 @@ export default async function BookPage() {
             <CardHeader>
               <CardTitle>Subscribe to Book</CardTitle>
               <CardDescription>
-                You need an active subscription to book sessions
+                You need an active subscription or session pack to book sessions
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Choose a plan that fits your schedule to start booking mentorship sessions.
+                Choose a plan that fits your schedule or redeem a coupon to start booking mentorship sessions.
               </p>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex gap-2">
               <Button asChild>
                 <Link href="/subscribe">View Plans</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/redeem">Redeem Coupon</Link>
               </Button>
             </CardFooter>
           </Card>

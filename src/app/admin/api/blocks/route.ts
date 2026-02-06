@@ -6,6 +6,7 @@ import {
   subscriptions,
   subscriptionCredits,
   sessions,
+  packs,
 } from "@/lib/db/schema";
 import { eq, and, gte, lt, desc } from "drizzle-orm";
 import { differenceInCalendarDays, parseISO, addDays } from "date-fns";
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
     );
 
   const affectedSubscriptionCounts = new Map<string, number>();
+  const affectedPackCounts = new Map<string, number>();
 
   for (const s of scheduledSessions) {
     if (s.googleEventId) {
@@ -122,6 +124,13 @@ export async function POST(request: Request) {
         (affectedSubscriptionCounts.get(s.subscriptionId) || 0) + 1
       );
     }
+
+    if (s.packId) {
+      affectedPackCounts.set(
+        s.packId,
+        (affectedPackCounts.get(s.packId) || 0) + 1
+      );
+    }
   }
 
   // 5. Credit session counts back to affected subscriptions
@@ -141,7 +150,24 @@ export async function POST(request: Request) {
     }
   }
 
-  // 6. Mark as notified (email deferred to Phase 7)
+  // 6. Credit session counts back to affected packs
+  for (const [packId, count] of affectedPackCounts) {
+    const [pack] = await db
+      .select()
+      .from(packs)
+      .where(eq(packs.id, packId));
+
+    if (pack) {
+      await db
+        .update(packs)
+        .set({
+          sessionsRemaining: pack.sessionsRemaining + count,
+        })
+        .where(eq(packs.id, packId));
+    }
+  }
+
+  // 7. Mark as notified (email deferred to Phase 7)
   await db
     .update(mentorBlocks)
     .set({ usersNotified: true })

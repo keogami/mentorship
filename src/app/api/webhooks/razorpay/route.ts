@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { subscriptions, plans } from "@/lib/db/schema";
+import { subscriptions, plans, sessions } from "@/lib/db/schema";
 import { razorpay } from "@/lib/razorpay/client";
 import {
   verifyWebhookSignature,
   type RazorpayWebhookPayload,
 } from "@/lib/razorpay/webhook";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import { deleteCalendarEvent } from "@/lib/google-calendar/client";
 
 export async function POST(request: Request) {
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
@@ -206,6 +207,37 @@ async function handleSubscriptionCancelled(
     return;
   }
 
+  // Cancel all pending sessions for this user
+  const pendingSessions = await db
+    .select()
+    .from(sessions)
+    .where(
+      and(
+        eq(sessions.userId, subscription.userId),
+        eq(sessions.status, "scheduled")
+      )
+    );
+
+  for (const session of pendingSessions) {
+    // Delete calendar event if exists
+    if (session.googleEventId) {
+      try {
+        await deleteCalendarEvent(session.googleEventId);
+      } catch (err) {
+        console.error(`Failed to delete calendar event ${session.googleEventId}:`, err);
+      }
+    }
+
+    // Mark session as cancelled
+    await db
+      .update(sessions)
+      .set({
+        status: "cancelled_by_user",
+        cancelledAt: new Date(),
+      })
+      .where(eq(sessions.id, session.id));
+  }
+
   await db
     .update(subscriptions)
     .set({
@@ -214,7 +246,7 @@ async function handleSubscriptionCancelled(
     })
     .where(eq(subscriptions.id, subscription.id));
 
-  console.log(`Subscription cancelled: ${subscription.id}`);
+  console.log(`Subscription cancelled: ${subscription.id}, cancelled ${pendingSessions.length} pending sessions`);
 }
 
 async function handleSubscriptionPaused(

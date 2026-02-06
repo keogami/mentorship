@@ -8,6 +8,7 @@ import {
   getUserSubscriptionWithPlan,
   hasPendingSession,
 } from "@/lib/booking";
+import { getActivePack } from "@/lib/packs";
 
 export async function GET() {
   const session = await auth();
@@ -16,7 +17,8 @@ export async function GET() {
   let weekendAccess = false;
   let userHasPendingSession = false;
   let sessionsRemaining = 0;
-  let hasActiveSubscription = false;
+  let hasSessionSource = false;
+  let hasActivePack = false;
 
   if (session?.user?.email) {
     const [user] = await db
@@ -27,13 +29,27 @@ export async function GET() {
     if (user) {
       userId = user.id;
 
-      const subscription = await getUserSubscriptionWithPlan(user.id);
+      const [subscription, activePack] = await Promise.all([
+        getUserSubscriptionWithPlan(user.id),
+        getActivePack(user.id),
+      ]);
+
       if (subscription && subscription.status === "active") {
-        hasActiveSubscription = true;
+        hasSessionSource = true;
         weekendAccess = subscription.plan.weekendAccess;
         sessionsRemaining =
           subscription.plan.sessionsPerPeriod -
           subscription.sessionsUsedThisPeriod;
+      }
+
+      if (activePack) {
+        hasSessionSource = true;
+        hasActivePack = true;
+        weekendAccess = true;
+        sessionsRemaining += activePack.sessionsRemaining;
+      }
+
+      if (hasSessionSource) {
         userHasPendingSession = await hasPendingSession(user.id);
       }
     }
@@ -48,7 +64,8 @@ export async function GET() {
           sessionsRemaining,
           hasPendingSession: userHasPendingSession,
           weekendAccess,
-          hasActiveSubscription,
+          hasActiveSubscription: hasSessionSource,
+          hasActivePack,
         }
       : null,
   });
