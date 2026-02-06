@@ -129,9 +129,9 @@ export function CalendarWeekView({
 
       {selectedSlot && canBook && (
         <div className="sticky bottom-4 flex justify-center">
-          <Card className="shadow-lg">
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="text-sm">
+          <Card className="shadow-lg w-full sm:w-auto">
+            <CardContent className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 p-4">
+              <div className="text-sm text-center sm:text-left">
                 <div className="font-medium">
                   {format(parseISO(selectedSlot), "EEEE, MMMM d")}
                 </div>
@@ -139,19 +139,23 @@ export function CalendarWeekView({
                   {format(parseISO(selectedSlot), "h:mm a")} IST
                 </div>
               </div>
-              <Button
-                onClick={handleBookClick}
-                disabled={isBooking}
-              >
-                {isBooking ? "Booking..." : "Book Session"}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => setSelectedSlot(null)}
-                disabled={isBooking}
-              >
-                Cancel
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button
+                  onClick={handleBookClick}
+                  disabled={isBooking}
+                  className="flex-1 sm:flex-none min-h-[44px]"
+                >
+                  {isBooking ? "Booking..." : "Book Session"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setSelectedSlot(null)}
+                  disabled={isBooking}
+                  className="min-h-[44px]"
+                >
+                  Cancel
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

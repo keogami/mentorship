@@ -343,8 +343,8 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
         {coupons.length === 0 ? (
           <p className="text-sm text-muted-foreground">No coupons created.</p>
         ) : (
-          <div className="rounded-md border">
-            <Table>
+          <div className="rounded-md border overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Code</TableHead>

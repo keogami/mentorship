@@ -146,8 +146,8 @@ export function UsersTab({ users }: UsersTabProps) {
       {users.length === 0 ? (
         <p className="text-sm text-muted-foreground">No subscribers yet.</p>
       ) : (
-        <div className="rounded-md border">
-          <Table>
+        <div className="rounded-md border overflow-x-auto">
+          <Table className="min-w-[700px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>

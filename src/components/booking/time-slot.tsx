@@ -44,7 +44,7 @@ export function TimeSlot({
       disabled={!isClickable}
       onClick={isClickable ? onClick : undefined}
       className={cn(
-        "w-full justify-start font-mono text-sm",
+        "w-full justify-start font-mono text-sm min-h-[44px]",
         !available && "opacity-50 cursor-not-allowed",
         selected && "ring-2 ring-primary"
       )}
