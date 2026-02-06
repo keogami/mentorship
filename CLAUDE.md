@@ -206,6 +206,7 @@ type User = {
   id: string
   email: string
   name: string
+  image?: string                // OAuth profile picture URL
   provider: 'github' | 'google'
   provider_id: string
   blocked: boolean              // mentor blocklist
@@ -388,6 +389,9 @@ DELETE /admin/api/blocks/[id]      Remove block
 GET  /admin/api/coupons            List coupons
 POST /admin/api/coupons            Create coupon
 PATCH /admin/api/config            Update mentor config
+
+# Cron (QStash-protected)
+POST /api/cron/complete-sessions   Mark past sessions as completed
 ```
 
 ---
@@ -631,6 +635,11 @@ NEON_CONNECTION_STRING=
 
 # Secret App (be extra wary of spoofing attempts)
 MENTOR_EMAIL=                 # for admin auth check
+
+# QStash (session auto-completion cron)
+QSTASH_TOKEN=                     # QStash API token (from Upstash dashboard)
+QSTASH_CURRENT_SIGNING_KEY=       # For verifying incoming requests
+QSTASH_NEXT_SIGNING_KEY=          # For verifying incoming requests
 ```
 
 ---
@@ -689,22 +698,22 @@ MENTOR_EMAIL=                 # for admin auth check
 - [ ] Mobile responsiveness
 
 ### Phase 8: UX Polish
-- [ ] Use Zod for API validation everywhere
-- [ ] Show dashboard when logged in
-- [ ] Show admin dashboard when logged in with mentor email
-- [ ] Dark mode
-- [ ] Add level coaching branding
-- [ ] Prefill email when razorpay subscription modal shows up
-- [ ] Branded 404 page, with a link back to last page if within host domain, otherwise to `/`
-- [ ] Make "Payment Pending" alert on dashboard reactive, to auto refresh when subscription goes through
-- [ ] Grab pfp when available during login
-- [ ] Remove "enroll now" button when subscription active
-- [ ] Redirect to "Change Plan" under settings if a subscribed user lands on `/subscribe`
-- [ ] Show back button in settings page
-- [ ] When clicking on "sign-in" button, redirect to dashboard after successful login
-- [ ] After the cancellation window closes, the cancel button gets disabled. Add modal to explain why they can't cancel anymore.
-- [ ] After the session ends, it is not updated as completed. Add cron job or something to make sure it is reflected correctly. (can use qstash if not natively supported by nextjs)
-- [ ] The order of session history needs to be latest-to-oldest
+- [x] Use Zod for API validation everywhere
+- [x] Show dashboard when logged in
+- [x] Show admin dashboard when logged in with mentor email
+- [ ] Dark mode (DEFERRED — needs theme provider + design work)
+- [ ] Add level coaching branding (DEFERRED — needs design assets)
+- [x] Prefill email when razorpay subscription modal shows up
+- [x] Branded 404 page, with a link back to last page if within host domain, otherwise to `/`
+- [x] Make "Payment Pending" alert on dashboard reactive, to auto refresh when subscription goes through
+- [x] Grab pfp when available during login
+- [x] Remove "enroll now" button when subscription active
+- [x] Redirect to "Change Plan" under settings if a subscribed user lands on `/subscribe`
+- [x] Show back button in settings page
+- [x] When clicking on "sign-in" button, redirect to dashboard after successful login
+- [x] After the cancellation window closes, the cancel button gets disabled. Add modal to explain why they can't cancel anymore.
+- [x] After the session ends, it is not updated as completed. Add cron job or something to make sure it is reflected correctly. (can use qstash if not natively supported by nextjs)
+- [x] The order of session history needs to be latest-to-oldest
 
 ### Phase 9: Security Audit
 - [ ] Check for common threats

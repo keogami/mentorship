@@ -7,9 +7,10 @@ import type { Plan } from "@/lib/db/types";
 
 type PlanSelectionProps = {
   razorpayKeyId: string;
+  userEmail?: string;
 };
 
-export function PlanSelection({ razorpayKeyId }: PlanSelectionProps) {
+export function PlanSelection({ razorpayKeyId, userEmail }: PlanSelectionProps) {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
@@ -71,6 +72,7 @@ export function PlanSelection({ razorpayKeyId }: PlanSelectionProps) {
           subscription_id: subscriptionId,
           name: "Mentorship",
           description: `${plan?.name || "Plan"} Subscription`,
+          prefill: userEmail ? { email: userEmail } : undefined,
           handler: () => {
             window.location.href = "/dashboard";
           },

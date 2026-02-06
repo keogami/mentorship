@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getActivePack } from "@/lib/packs";
+import { PaymentPendingCard } from "@/components/dashboard/payment-pending-card";
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("en-IN", {
@@ -105,25 +106,7 @@ export default async function DashboardPage() {
       return (
         <div className="container mx-auto px-4 py-16">
           <div className="mx-auto max-w-2xl">
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment Pending</CardTitle>
-                <CardDescription>
-                  Your subscription is awaiting payment confirmation
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Please complete your payment to activate your subscription.
-                  If you&apos;ve already paid, it may take a few moments to process.
-                </p>
-              </CardContent>
-              <CardFooter>
-                <Button asChild variant="outline">
-                  <Link href="/subscribe">Return to Plans</Link>
-                </Button>
-              </CardFooter>
-            </Card>
+            <PaymentPendingCard />
           </div>
         </div>
       );

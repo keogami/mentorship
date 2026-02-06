@@ -13,7 +13,11 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 
-export function MobileNav() {
+type MobileNavProps = {
+  isMentor?: boolean
+}
+
+export function MobileNav({ isMentor }: MobileNavProps) {
   const [open, setOpen] = useState(false)
   const { data: session } = useSession()
 
@@ -32,9 +36,28 @@ export function MobileNav() {
         <nav className="flex flex-col gap-2 px-4">
           {session?.user ? (
             <>
-              <p className="text-sm text-muted-foreground py-2">
-                {session.user.name || session.user.email}
-              </p>
+              <div className="flex items-center gap-2 py-2">
+                {session.user.image && (
+                  <img
+                    src={session.user.image}
+                    alt=""
+                    className="h-7 w-7 rounded-full"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {session.user.name || session.user.email}
+                </p>
+              </div>
+              {isMentor && (
+                <Link
+                  href="/admin"
+                  onClick={() => setOpen(false)}
+                  className="rounded-md px-3 py-3 text-sm font-medium hover:bg-accent min-h-[44px] flex items-center"
+                >
+                  Admin
+                </Link>
+              )}
               <Link
                 href="/dashboard"
                 onClick={() => setOpen(false)}
@@ -85,7 +108,7 @@ export function MobileNav() {
           ) : (
             <>
               <Link
-                href="/subscribe"
+                href="/subscribe?callbackUrl=%2Fdashboard"
                 onClick={() => setOpen(false)}
                 className="rounded-md px-3 py-3 text-sm font-medium hover:bg-accent min-h-[44px] flex items-center"
               >

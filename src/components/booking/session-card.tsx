@@ -6,6 +6,16 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { MENTOR_CONFIG } from "@/lib/constants";
 
 type SessionStatus =
@@ -128,32 +138,52 @@ export function SessionCard({
 
         {isUpcoming && cancelInfo && onCancel && (
           <div className="flex items-center gap-3 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onCancel(session.id)}
-              disabled={!cancelInfo.canCancel || isCancelling}
-            >
-              {isCancelling ? "Cancelling..." : "Cancel Session"}
-            </Button>
-            {showCancelWarning && cancelInfo.canCancel && (
-              <span
-                className={cn(
-                  "text-xs",
-                  cancelInfo.willGetCredit
-                    ? "text-muted-foreground"
-                    : "text-amber-600 dark:text-amber-400"
+            {cancelInfo.canCancel ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onCancel(session.id)}
+                  disabled={isCancelling}
+                >
+                  {isCancelling ? "Cancelling..." : "Cancel Session"}
+                </Button>
+                {showCancelWarning && (
+                  <span
+                    className={cn(
+                      "text-xs",
+                      cancelInfo.willGetCredit
+                        ? "text-muted-foreground"
+                        : "text-amber-600 dark:text-amber-400"
+                    )}
+                  >
+                    {cancelInfo.willGetCredit
+                      ? `${cancelInfo.hoursRemaining}h remaining - session will be credited back`
+                      : `Only ${cancelInfo.hoursRemaining}h remaining - session will NOT be credited back`}
+                  </span>
                 )}
-              >
-                {cancelInfo.willGetCredit
-                  ? `${cancelInfo.hoursRemaining}h remaining - session will be credited back`
-                  : `Only ${cancelInfo.hoursRemaining}h remaining - session will NOT be credited back`}
-              </span>
-            )}
-            {!cancelInfo.canCancel && (
-              <span className="text-xs text-muted-foreground">
-                Session has started
-              </span>
+              </>
+            ) : (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="opacity-50">
+                    Cancel Session
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Cancellation Unavailable</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Sessions can only be cancelled before the scheduled start
+                      time. Once the session time has passed, cancellation is no
+                      longer available.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogAction>Understood</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
         )}

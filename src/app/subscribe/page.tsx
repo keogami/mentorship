@@ -1,8 +1,17 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { users, subscriptions } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 import { AuthGate } from "@/components/auth/auth-gate";
 import { PlanSelection } from "@/components/subscribe";
 
-export default function SubscribePage() {
+export default async function SubscribePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
   const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
 
   if (!razorpayKeyId) {
@@ -20,9 +29,36 @@ export default function SubscribePage() {
     );
   }
 
+  const { callbackUrl } = await searchParams;
+
+  // Check if user is logged in and already has an active subscription
+  const session = await auth();
+  if (session?.user?.email) {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, session.user.email));
+
+    if (user) {
+      const [activeSub] = await db
+        .select()
+        .from(subscriptions)
+        .where(
+          and(
+            eq(subscriptions.userId, user.id),
+            eq(subscriptions.status, "active")
+          )
+        );
+
+      if (activeSub) {
+        redirect("/settings");
+      }
+    }
+  }
+
   return (
     <div className="container mx-auto px-4 py-16">
-      <AuthGate callbackUrl="/subscribe">
+      <AuthGate callbackUrl={callbackUrl || "/subscribe"}>
         <div className="mx-auto max-w-4xl space-y-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -32,7 +68,10 @@ export default function SubscribePage() {
               Select the plan that fits your learning schedule
             </p>
           </div>
-          <PlanSelection razorpayKeyId={razorpayKeyId} />
+          <PlanSelection
+            razorpayKeyId={razorpayKeyId}
+            userEmail={session?.user?.email ?? undefined}
+          />
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
               Have a coupon code?{" "}

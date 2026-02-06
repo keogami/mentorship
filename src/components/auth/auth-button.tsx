@@ -18,9 +18,19 @@ export function AuthButton() {
   if (session?.user) {
     return (
       <div className="flex items-center gap-4">
-        <span className="text-sm text-muted-foreground">
-          {session.user.name || session.user.email}
-        </span>
+        <div className="flex items-center gap-2">
+          {session.user.image && (
+            <img
+              src={session.user.image}
+              alt=""
+              className="h-7 w-7 rounded-full"
+              referrerPolicy="no-referrer"
+            />
+          )}
+          <span className="text-sm text-muted-foreground">
+            {session.user.name || session.user.email}
+          </span>
+        </div>
         <Button
           variant="outline"
           size="sm"
@@ -34,7 +44,7 @@ export function AuthButton() {
 
   return (
     <Button variant="ghost" asChild>
-      <Link href="/subscribe">Sign In</Link>
+      <Link href="/subscribe?callbackUrl=%2Fdashboard">Sign In</Link>
     </Button>
   )
 }

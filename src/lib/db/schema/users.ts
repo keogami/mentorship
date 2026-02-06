@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   provider: authProviderEnum("provider").notNull(),
   providerId: text("provider_id").notNull(),
+  image: text("image"),
   blocked: boolean("blocked").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

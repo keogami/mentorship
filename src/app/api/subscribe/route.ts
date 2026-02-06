@@ -56,6 +56,7 @@ export async function POST(request: Request) {
         name: session.user.name || session.user.email,
         provider: session.user.provider as "github" | "google",
         providerId: session.user.providerAccountId,
+        image: session.user.image ?? null,
       })
       .returning();
     user = newUser;

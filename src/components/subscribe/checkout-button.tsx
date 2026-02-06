@@ -8,6 +8,7 @@ type CheckoutButtonProps = {
   planId: string;
   planName: string;
   razorpayKeyId: string;
+  userEmail?: string;
   onSuccess?: () => void;
   onError?: (error: string) => void;
   children?: React.ReactNode;
@@ -20,6 +21,7 @@ export function CheckoutButton({
   planId,
   planName,
   razorpayKeyId,
+  userEmail,
   onSuccess,
   onError,
   children,
@@ -61,6 +63,7 @@ export function CheckoutButton({
         subscription_id: subscriptionId,
         name: "Mentorship",
         description: `${planName} Subscription`,
+        prefill: userEmail ? { email: userEmail } : undefined,
         handler: () => {
           onSuccess?.();
           window.location.href = "/dashboard";

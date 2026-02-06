@@ -31,6 +31,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.provider = token.provider as string
         session.user.providerAccountId = token.providerAccountId as string
+        session.user.image = token.picture as string | undefined
       }
       return session
     },
