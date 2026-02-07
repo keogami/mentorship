@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { AuthButton } from "@/components/auth/auth-button"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { MobileNav } from "./mobile-nav"
 import { auth } from "@/auth"
 
@@ -16,6 +17,7 @@ export async function Header() {
           Mentorship
         </Link>
         <div className="hidden md:flex items-center gap-4">
+          <ThemeToggle />
           <AuthButton />
           {isLoggedIn ? (
             <Button asChild>

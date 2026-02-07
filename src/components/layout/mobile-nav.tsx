@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useSession, signOut } from "next-auth/react"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
 import {
   Sheet,
   SheetContent,
@@ -94,6 +95,10 @@ export function MobileNav({ isMentor }: MobileNavProps) {
                 Redeem Coupon
               </Link>
               <hr className="my-2" />
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="text-sm text-muted-foreground">Theme</span>
+                <ThemeToggle />
+              </div>
               <Button
                 variant="outline"
                 className="min-h-[44px]"

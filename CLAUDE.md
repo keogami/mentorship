@@ -701,7 +701,7 @@ QSTASH_NEXT_SIGNING_KEY=          # For verifying incoming requests
 - [x] Use Zod for API validation everywhere
 - [x] Show dashboard when logged in
 - [x] Show admin dashboard when logged in with mentor email
-- [ ] Dark mode (DEFERRED — needs theme provider + design work)
+- [x] Dark mode (next-themes + ThemeToggle in header/mobile nav)
 - [ ] Add level coaching branding (DEFERRED — needs design assets)
 - [x] Prefill email when razorpay subscription modal shows up
 - [x] Branded 404 page, with a link back to last page if within host domain, otherwise to `/`
