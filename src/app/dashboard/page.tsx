@@ -54,6 +54,11 @@ export default async function DashboardPage() {
     redirect("/subscribe");
   }
 
+  // Redirect mentor to admin dashboard
+  if (session.user.email === process.env.MENTOR_EMAIL) {
+    redirect("/admin");
+  }
+
   // Get user from database
   const [user] = await db
     .select()

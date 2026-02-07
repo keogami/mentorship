@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { users, subscriptions, plans } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
+import { GoBackButton } from "@/components/layout/go-back-button";
 import {
   Card,
   CardContent,
@@ -99,6 +100,8 @@ export default async function SettingsPage() {
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="mx-auto max-w-2xl space-y-6">
+        <GoBackButton />
+
         <div>
           <h1 className="text-3xl font-bold">Settings</h1>
           <p className="text-muted-foreground">
@@ -112,12 +115,6 @@ export default async function SettingsPage() {
           availablePlans={sortedPlans}
           pendingPlan={pendingPlan}
         />
-
-        <div className="flex justify-start">
-          <Button variant="outline" asChild>
-            <Link href="/dashboard">Back to Dashboard</Link>
-          </Button>
-        </div>
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ export default function NotFound() {
         The page you&apos;re looking for doesn&apos;t exist or has been moved.
       </p>
       <div className="mt-8 flex gap-3">
-        <GoBackButton />
+        <GoBackButton fallback="/" />
         <Button asChild>
           <Link href="/">Go Home</Link>
         </Button>

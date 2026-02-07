@@ -14,6 +14,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getUserSubscriptionWithPlan } from "@/lib/booking";
+import { getActivePack } from "@/lib/packs";
+import { GoBackButton } from "@/components/layout/go-back-button";
 import { SessionsClient } from "./sessions-client";
 
 export default async function SessionsPage() {
@@ -33,8 +35,9 @@ export default async function SessionsPage() {
     redirect("/subscribe");
   }
 
-  // Get subscription
+  // Get subscription and pack
   const subscription = await getUserSubscriptionWithPlan(user.id);
+  const activePack = await getActivePack(user.id);
 
   // Get user's sessions
   const userSessions = await db
@@ -56,13 +59,18 @@ export default async function SessionsPage() {
   }));
 
   const hasActiveSubscription = subscription?.status === "active";
-  const sessionsRemaining = hasActiveSubscription
+  const subRemaining = hasActiveSubscription
     ? subscription.plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod
     : 0;
+  const packRemaining = activePack?.sessionsRemaining ?? 0;
+  const sessionsRemaining = subRemaining + packRemaining;
+  const hasAnySessions = sessionsRemaining > 0;
 
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="mx-auto max-w-3xl space-y-6">
+        <GoBackButton />
+
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Sessions</h1>
@@ -70,36 +78,35 @@ export default async function SessionsPage() {
               View and manage your mentorship sessions
             </p>
           </div>
-          <Button variant="outline" asChild>
-            <Link href="/dashboard">Back to Dashboard</Link>
-          </Button>
         </div>
 
-        {hasActiveSubscription && (
+        {hasAnySessions ? (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Session Balance</CardTitle>
             </CardHeader>
             <CardContent className="flex items-center justify-between">
-              <div>
+              <div className="space-y-1">
                 <p className="text-2xl font-bold">{sessionsRemaining}</p>
                 <p className="text-sm text-muted-foreground">
-                  sessions remaining this {subscription.plan.slug.includes("weekly") ? "week" : "month"}
+                  sessions remaining
+                  {hasActiveSubscription && (
+                    <> ({subRemaining} subscription{packRemaining > 0 && <> + {packRemaining} pack</>})</>
+                  )}
+                  {!hasActiveSubscription && packRemaining > 0 && " (pack)"}
                 </p>
               </div>
-              <Button asChild disabled={sessionsRemaining <= 0}>
+              <Button asChild>
                 <Link href="/book">Book Session</Link>
               </Button>
             </CardContent>
           </Card>
-        )}
-
-        {!hasActiveSubscription && (
+        ) : (
           <Card>
             <CardHeader>
-              <CardTitle>No Active Subscription</CardTitle>
+              <CardTitle>No Active Sessions</CardTitle>
               <CardDescription>
-                Subscribe to book mentorship sessions
+                Subscribe or redeem a coupon to book mentorship sessions
               </CardDescription>
             </CardHeader>
             <CardFooter>

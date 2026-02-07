@@ -28,6 +28,7 @@ function formatHour(hour: number): string {
 }
 
 export function TimeSlot({
+  time,
   hour,
   available,
   reason,
@@ -35,24 +36,27 @@ export function TimeSlot({
   disabled,
   onClick,
 }: TimeSlotProps) {
-  const isClickable = available && !disabled;
+  const isPast = new Date(time) <= new Date();
+  const effectiveAvailable = available && !isPast;
+  const effectiveReason = isPast ? "past" : reason;
+  const isClickable = effectiveAvailable && !disabled;
 
   return (
     <Button
-      variant={selected ? "default" : available ? "outline" : "ghost"}
+      variant={selected ? "default" : effectiveAvailable ? "outline" : "ghost"}
       size="sm"
       disabled={!isClickable}
       onClick={isClickable ? onClick : undefined}
       className={cn(
         "w-full justify-start font-mono text-sm min-h-[44px]",
-        !available && "opacity-50 cursor-not-allowed",
+        !effectiveAvailable && "opacity-50 cursor-not-allowed",
         selected && "ring-2 ring-primary"
       )}
     >
       <span>{formatHour(hour)}</span>
-      {!available && reason && (
+      {!effectiveAvailable && effectiveReason && (
         <span className="ml-auto text-xs text-muted-foreground">
-          {reasonMessages[reason]}
+          {reasonMessages[effectiveReason]}
         </span>
       )}
     </Button>

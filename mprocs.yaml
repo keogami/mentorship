@@ -1,0 +1,7 @@
+procs:
+  dev:
+    shell: "pnpm dev"
+  studio:
+    shell: "pnpm db:studio"
+  ngrok:
+    shell: "ngrok http 3000"
