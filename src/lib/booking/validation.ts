@@ -378,7 +378,8 @@ export async function validateBooking(
   return { valid: true };
 }
 
-export function canCancelWithCredit(scheduledAt: Date): boolean {
+export async function canCancelWithCredit(scheduledAt: Date): Promise<boolean> {
+  const config = await getMentorConfig();
   const hoursUntilSession = differenceInHours(scheduledAt, new Date());
-  return hoursUntilSession >= MENTOR_CONFIG.cancellationNoticeHours;
+  return hoursUntilSession >= config.cancellationNoticeHours;
 }

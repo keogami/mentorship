@@ -1,3 +1,5 @@
+import { escapeHtml } from "../escape";
+
 export type MentorCancelledUserData = {
   userName: string;
   reason: string;
@@ -14,6 +16,8 @@ function formatPrice(priceInr: number): string {
 
 export function mentorCancelledUserEmail(data: MentorCancelledUserData) {
   const hasRefund = data.refundAmount > 0;
+  const userName = escapeHtml(data.userName);
+  const reason = escapeHtml(data.reason);
 
   return {
     subject: "Your Mentorship subscription has been terminated",
@@ -27,12 +31,12 @@ export function mentorCancelledUserEmail(data: MentorCancelledUserData) {
 <body style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <h1 style="color: #111; margin-bottom: 24px;">Subscription Terminated</h1>
 
-  <p>Hi ${data.userName},</p>
+  <p>Hi ${userName},</p>
 
   <p>Your Mentorship subscription has been terminated by the mentor.</p>
 
   <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 16px; margin: 24px 0;">
-    <p style="margin: 0;"><strong>Reason:</strong> ${data.reason}</p>
+    <p style="margin: 0;"><strong>Reason:</strong> ${reason}</p>
   </div>
 
   ${

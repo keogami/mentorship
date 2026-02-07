@@ -2,18 +2,21 @@
 
 import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
+import { sanitizeCallbackUrl } from "@/lib/auth/sanitize-callback"
 
 interface SignInOptionsProps {
   callbackUrl?: string
 }
 
-export function SignInOptions({ callbackUrl = "/dashboard" }: SignInOptionsProps) {
+export function SignInOptions({ callbackUrl }: SignInOptionsProps) {
+  const safeCallbackUrl = sanitizeCallbackUrl(callbackUrl)
+
   return (
     <div className="flex flex-col gap-3 w-full max-w-sm">
       <Button
         variant="outline"
         className="w-full"
-        onClick={() => signIn("github", { callbackUrl })}
+        onClick={() => signIn("github", { callbackUrl: safeCallbackUrl })}
       >
         <GitHubIcon className="mr-2 h-4 w-4" />
         Continue with GitHub
@@ -21,7 +24,7 @@ export function SignInOptions({ callbackUrl = "/dashboard" }: SignInOptionsProps
       <Button
         variant="outline"
         className="w-full"
-        onClick={() => signIn("google", { callbackUrl })}
+        onClick={() => signIn("google", { callbackUrl: safeCallbackUrl })}
       >
         <GoogleIcon className="mr-2 h-4 w-4" />
         Continue with Google

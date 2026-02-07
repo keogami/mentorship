@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { mentorConfig } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { MENTOR_CONFIG } from "@/lib/constants";
+import { validateBody, updateConfigSchema } from "@/lib/validation";
 
 export async function GET() {
   const adminCheck = await requireAdmin();
@@ -27,48 +28,9 @@ export async function PATCH(request: Request) {
   if (!adminCheck.authorized) return adminCheck.response;
 
   const body = await request.json();
-  const { maxSessionsPerDay, bookingWindowDays, cancellationNoticeHours } =
-    body;
-
-  // Validate: all provided values must be positive integers
-  const updates: Record<string, number> = {};
-  if (maxSessionsPerDay !== undefined) {
-    if (!Number.isInteger(maxSessionsPerDay) || maxSessionsPerDay < 1) {
-      return NextResponse.json(
-        { error: "maxSessionsPerDay must be a positive integer" },
-        { status: 400 }
-      );
-    }
-    updates.maxSessionsPerDay = maxSessionsPerDay;
-  }
-  if (bookingWindowDays !== undefined) {
-    if (!Number.isInteger(bookingWindowDays) || bookingWindowDays < 1) {
-      return NextResponse.json(
-        { error: "bookingWindowDays must be a positive integer" },
-        { status: 400 }
-      );
-    }
-    updates.bookingWindowDays = bookingWindowDays;
-  }
-  if (cancellationNoticeHours !== undefined) {
-    if (
-      !Number.isInteger(cancellationNoticeHours) ||
-      cancellationNoticeHours < 0
-    ) {
-      return NextResponse.json(
-        { error: "cancellationNoticeHours must be a non-negative integer" },
-        { status: 400 }
-      );
-    }
-    updates.cancellationNoticeHours = cancellationNoticeHours;
-  }
-
-  if (Object.keys(updates).length === 0) {
-    return NextResponse.json(
-      { error: "No valid fields to update" },
-      { status: 400 }
-    );
-  }
+  const parsed = validateBody(updateConfigSchema, body);
+  if (!parsed.success) return parsed.response;
+  const updates = parsed.data;
 
   // Upsert the singleton row
   const [existing] = await db.select().from(mentorConfig).limit(1);

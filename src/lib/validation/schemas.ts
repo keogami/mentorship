@@ -59,6 +59,21 @@ export const createCouponSchema = z.object({
     .optional(),
 });
 
+// Subscribe cancel (by user)
+export const subscribeCancelSchema = z.object({
+  reason: z.string().max(500).optional(),
+});
+
+// Admin: Update mentor config
+export const updateConfigSchema = z.object({
+  maxSessionsPerDay: z.number().int().min(1).max(20).optional(),
+  bookingWindowDays: z.number().int().min(1).max(30).optional(),
+  cancellationNoticeHours: z.number().int().min(0).max(48).optional(),
+}).refine(
+  (data) => Object.values(data).some((v) => v !== undefined),
+  { message: "No valid fields to update" }
+);
+
 // Admin: Cancel user
 export const cancelUserSchema = z.object({
   reason: z

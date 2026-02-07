@@ -19,8 +19,10 @@ export async function GET(request: Request) {
   const limitParam = searchParams.get("limit");
   const offsetParam = searchParams.get("offset");
 
-  const limit = limitParam ? Math.min(parseInt(limitParam, 10), 50) : 20;
-  const offset = offsetParam ? parseInt(offsetParam, 10) : 0;
+  const parsedLimit = limitParam ? parseInt(limitParam, 10) : NaN;
+  const parsedOffset = offsetParam ? parseInt(offsetParam, 10) : NaN;
+  const limit = Number.isNaN(parsedLimit) ? 20 : Math.min(Math.max(parsedLimit, 1), 50);
+  const offset = Number.isNaN(parsedOffset) ? 0 : Math.max(parsedOffset, 0);
 
   // Get user
   const [user] = await db

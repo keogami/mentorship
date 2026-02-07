@@ -1,3 +1,5 @@
+import { escapeHtml } from "../escape";
+
 export type SubscriptionActivatedData = {
   userName: string;
   planName: string;
@@ -7,6 +9,8 @@ export type SubscriptionActivatedData = {
 
 export function subscriptionActivatedEmail(data: SubscriptionActivatedData) {
   const periodLabel = data.period === "weekly" ? "week" : "month";
+  const userName = escapeHtml(data.userName);
+  const planName = escapeHtml(data.planName);
 
   return {
     subject: `Welcome to Mentorship - Your ${data.planName} plan is now active`,
@@ -20,9 +24,9 @@ export function subscriptionActivatedEmail(data: SubscriptionActivatedData) {
 <body style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <h1 style="color: #111; margin-bottom: 24px;">Welcome to Mentorship!</h1>
 
-  <p>Hi ${data.userName},</p>
+  <p>Hi ${userName},</p>
 
-  <p>Your <strong>${data.planName}</strong> subscription is now active. You have <strong>${data.sessionsPerPeriod} sessions</strong> available this ${periodLabel}.</p>
+  <p>Your <strong>${planName}</strong> subscription is now active. You have <strong>${data.sessionsPerPeriod} sessions</strong> available this ${periodLabel}.</p>
 
   <div style="background: #f5f5f5; border-radius: 8px; padding: 16px; margin: 24px 0;">
     <p style="margin: 0 0 8px 0;"><strong>Next steps:</strong></p>

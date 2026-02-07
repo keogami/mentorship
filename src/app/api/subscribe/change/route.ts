@@ -35,6 +35,13 @@ export async function POST(request: Request) {
     );
   }
 
+  if (user.blocked) {
+    return NextResponse.json(
+      { error: "Your account has been suspended" },
+      { status: 403 }
+    );
+  }
+
   // Get the new plan
   const [newPlan] = await db
     .select()

@@ -23,10 +23,24 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import type { Plan, Subscription } from "@/lib/db/types";
+import type { Plan } from "@/lib/db/types";
+
+type SafeSubscription = {
+  id: string;
+  userId: string;
+  status: string;
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  sessionsUsedThisPeriod: number;
+  planId: string;
+  pendingPlanChangeId: string | null;
+  cancelledAt: Date | null;
+  cancelReason: string | null;
+  createdAt: Date;
+};
 
 type SubscriptionSettingsProps = {
-  subscription: Subscription;
+  subscription: SafeSubscription;
   currentPlan: Plan;
   availablePlans: Plan[];
   pendingPlan: Plan | null;

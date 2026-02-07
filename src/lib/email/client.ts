@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { stripCrlf } from "./escape";
 
 let gmailInstance: ReturnType<typeof google.gmail> | null = null;
 
@@ -39,11 +40,16 @@ export async function sendEmail(message: EmailMessage): Promise<void> {
     throw new Error("MENTOR_EMAIL is not set");
   }
 
+  // Strip CRLF from header values to prevent header injection
+  const safeTo = stripCrlf(message.to);
+  const safeSubject = stripCrlf(message.subject);
+  const safeFrom = stripCrlf(mentorEmail);
+
   // Create raw email message
   const email = [
-    `From: Mentorship <${mentorEmail}>`,
-    `To: ${message.to}`,
-    `Subject: ${message.subject}`,
+    `From: Mentorship <${safeFrom}>`,
+    `To: ${safeTo}`,
+    `Subject: ${safeSubject}`,
     `MIME-Version: 1.0`,
     `Content-Type: text/html; charset=utf-8`,
     "",

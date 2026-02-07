@@ -5,7 +5,17 @@ import { eq } from "drizzle-orm";
 
 export async function GET() {
   const activePlans = await db
-    .select()
+    .select({
+      id: plans.id,
+      name: plans.name,
+      slug: plans.slug,
+      priceInr: plans.priceInr,
+      sessionsPerPeriod: plans.sessionsPerPeriod,
+      period: plans.period,
+      weekendAccess: plans.weekendAccess,
+      active: plans.active,
+      createdAt: plans.createdAt,
+    })
     .from(plans)
     .where(eq(plans.active, true));
 

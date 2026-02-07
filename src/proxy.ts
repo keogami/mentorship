@@ -21,6 +21,7 @@ export async function proxy(request: NextRequest) {
   // Redirect unauthenticated users from protected routes to subscribe
   if ((isProtectedRoute || isAdminRoute) && !isAuthenticated) {
     const subscribeUrl = new URL("/subscribe", request.url)
+    // Only pass the pathname as callbackUrl (not full URL) to prevent open redirects
     subscribeUrl.searchParams.set("callbackUrl", pathname)
     return NextResponse.redirect(subscribeUrl)
   }

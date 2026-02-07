@@ -110,7 +110,19 @@ export default async function SettingsPage() {
         </div>
 
         <SubscriptionSettings
-          subscription={activeSubscription.subscription}
+          subscription={{
+            id: activeSubscription.subscription.id,
+            userId: activeSubscription.subscription.userId,
+            status: activeSubscription.subscription.status,
+            currentPeriodStart: activeSubscription.subscription.currentPeriodStart,
+            currentPeriodEnd: activeSubscription.subscription.currentPeriodEnd,
+            sessionsUsedThisPeriod: activeSubscription.subscription.sessionsUsedThisPeriod,
+            planId: activeSubscription.subscription.planId,
+            pendingPlanChangeId: activeSubscription.subscription.pendingPlanChangeId,
+            cancelledAt: activeSubscription.subscription.cancelledAt,
+            cancelReason: activeSubscription.subscription.cancelReason,
+            createdAt: activeSubscription.subscription.createdAt,
+          }}
           currentPlan={activeSubscription.plan}
           availablePlans={sortedPlans}
           pendingPlan={pendingPlan}

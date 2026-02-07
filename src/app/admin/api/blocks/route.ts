@@ -9,7 +9,7 @@ import {
   packs,
   users,
 } from "@/lib/db/schema";
-import { eq, and, gte, lte, lt, desc } from "drizzle-orm";
+import { eq, and, gte, lte, lt, desc, sql } from "drizzle-orm";
 import { differenceInCalendarDays, parseISO, addDays } from "date-fns";
 import { deleteCalendarEvent } from "@/lib/google-calendar/client";
 import { sendBulkEmails, mentorBlockNoticeEmail } from "@/lib/email";
@@ -47,141 +47,148 @@ export async function POST(request: Request) {
     );
   }
 
-  // Check for overlapping blocks
-  const overlapping = await db
-    .select({ id: mentorBlocks.id })
-    .from(mentorBlocks)
-    .where(
-      and(
-        lte(mentorBlocks.startDate, endDate),
-        gte(mentorBlocks.endDate, startDate)
+  // Wrap all DB mutations in a single transaction
+  const result = await db.transaction(async (tx) => {
+    // Check for overlapping blocks
+    const overlapping = await tx
+      .select({ id: mentorBlocks.id })
+      .from(mentorBlocks)
+      .where(
+        and(
+          lte(mentorBlocks.startDate, endDate),
+          gte(mentorBlocks.endDate, startDate)
+        )
       )
-    )
-    .limit(1);
+      .limit(1);
 
-  if (overlapping.length > 0) {
-    return NextResponse.json(
-      { error: "This range overlaps with an existing block" },
-      { status: 409 }
-    );
-  }
+    if (overlapping.length > 0) {
+      return { error: "This range overlaps with an existing block", status: 409 };
+    }
 
-  // 1. Create block
-  const [block] = await db
-    .insert(mentorBlocks)
-    .values({
-      startDate,
-      endDate,
-      reason: reason,
-    })
-    .returning();
+    // 1. Create block
+    const [block] = await tx
+      .insert(mentorBlocks)
+      .values({
+        startDate,
+        endDate,
+        reason,
+      })
+      .returning();
 
-  // 2. Calculate block days (inclusive)
-  const blockDays = differenceInCalendarDays(end, start) + 1;
+    // 2. Calculate block days (inclusive)
+    const blockDays = differenceInCalendarDays(end, start) + 1;
 
-  // 3. Credit each active subscription
-  const activeSubs = await db
-    .select()
-    .from(subscriptions)
-    .where(eq(subscriptions.status, "active"));
+    // 3. Credit each active subscription
+    const activeSubs = await tx
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.status, "active"));
 
-  for (const sub of activeSubs) {
-    await db.insert(subscriptionCredits).values({
-      subscriptionId: sub.id,
-      days: blockDays,
-      reason: `Mentor unavailable: ${reason}`,
-      blockId: block.id,
-    });
-  }
+    for (const sub of activeSubs) {
+      await tx.insert(subscriptionCredits).values({
+        subscriptionId: sub.id,
+        days: blockDays,
+        reason: `Mentor unavailable: ${reason}`,
+        blockId: block.id,
+      });
+    }
 
-  // 4. Cancel scheduled sessions within the block range
-  const blockStart = start; // midnight UTC of start date
-  const blockEndExclusive = addDays(end, 1); // midnight UTC of day after end date
+    // 4. Cancel scheduled sessions within the block range
+    const blockStart = start;
+    const blockEndExclusive = addDays(end, 1);
 
-  const scheduledSessions = await db
-    .select()
-    .from(sessions)
-    .where(
-      and(
-        eq(sessions.status, "scheduled"),
-        gte(sessions.scheduledAt, blockStart),
-        lt(sessions.scheduledAt, blockEndExclusive)
-      )
-    );
+    const scheduledSessions = await tx
+      .select()
+      .from(sessions)
+      .where(
+        and(
+          eq(sessions.status, "scheduled"),
+          gte(sessions.scheduledAt, blockStart),
+          lt(sessions.scheduledAt, blockEndExclusive)
+        )
+      );
 
-  const affectedSubscriptionCounts = new Map<string, number>();
-  const affectedPackCounts = new Map<string, number>();
+    const calendarEventsToDelete: string[] = [];
+    const affectedSubscriptionCounts = new Map<string, number>();
+    const affectedPackCounts = new Map<string, number>();
 
-  for (const s of scheduledSessions) {
-    if (s.googleEventId) {
-      try {
-        await deleteCalendarEvent(s.googleEventId);
-      } catch (err) {
-        console.error(`Failed to delete calendar event ${s.googleEventId}:`, err);
+    for (const s of scheduledSessions) {
+      if (s.googleEventId) {
+        calendarEventsToDelete.push(s.googleEventId);
+      }
+
+      await tx
+        .update(sessions)
+        .set({
+          status: "cancelled_by_mentor",
+          cancelledAt: new Date(),
+        })
+        .where(eq(sessions.id, s.id));
+
+      if (s.subscriptionId) {
+        affectedSubscriptionCounts.set(
+          s.subscriptionId,
+          (affectedSubscriptionCounts.get(s.subscriptionId) || 0) + 1
+        );
+      }
+
+      if (s.packId) {
+        affectedPackCounts.set(
+          s.packId,
+          (affectedPackCounts.get(s.packId) || 0) + 1
+        );
       }
     }
 
-    await db
-      .update(sessions)
-      .set({
-        status: "cancelled_by_mentor",
-        cancelledAt: new Date(),
-      })
-      .where(eq(sessions.id, s.id));
-
-    if (s.subscriptionId) {
-      affectedSubscriptionCounts.set(
-        s.subscriptionId,
-        (affectedSubscriptionCounts.get(s.subscriptionId) || 0) + 1
-      );
-    }
-
-    if (s.packId) {
-      affectedPackCounts.set(
-        s.packId,
-        (affectedPackCounts.get(s.packId) || 0) + 1
-      );
-    }
-  }
-
-  // 5. Credit session counts back to affected subscriptions
-  for (const [subId, count] of affectedSubscriptionCounts) {
-    const [sub] = await db
-      .select()
-      .from(subscriptions)
-      .where(eq(subscriptions.id, subId));
-
-    if (sub) {
-      await db
+    // 5. Credit session counts back atomically
+    for (const [subId, count] of affectedSubscriptionCounts) {
+      await tx
         .update(subscriptions)
         .set({
-          sessionsUsedThisPeriod: Math.max(0, sub.sessionsUsedThisPeriod - count),
+          sessionsUsedThisPeriod: sql`greatest(${subscriptions.sessionsUsedThisPeriod} - ${count}, 0)`,
         })
         .where(eq(subscriptions.id, subId));
     }
-  }
 
-  // 6. Credit session counts back to affected packs
-  for (const [packId, count] of affectedPackCounts) {
-    const [pack] = await db
-      .select()
-      .from(packs)
-      .where(eq(packs.id, packId));
-
-    if (pack) {
-      await db
+    for (const [packId, count] of affectedPackCounts) {
+      await tx
         .update(packs)
         .set({
-          sessionsRemaining: pack.sessionsRemaining + count,
+          sessionsRemaining: sql`${packs.sessionsRemaining} + ${count}`,
         })
         .where(eq(packs.id, packId));
     }
+
+    return {
+      success: true as const,
+      block,
+      blockDays,
+      activeSubs,
+      scheduledSessionCount: scheduledSessions.length,
+      calendarEventsToDelete,
+    };
+  });
+
+  if ("error" in result) {
+    return NextResponse.json(
+      { error: result.error },
+      { status: result.status }
+    );
   }
 
-  // 7. Send notification emails to all active subscribers
+  // Delete calendar events outside the transaction
+  for (const eventId of result.calendarEventsToDelete) {
+    try {
+      await deleteCalendarEvent(eventId);
+    } catch (err) {
+      console.error(`Failed to delete calendar event ${eventId}:`, err);
+    }
+  }
+
+  // Send notification emails outside the transaction
   try {
     const emailMessages = await Promise.all(
-      activeSubs.map(async (sub) => {
+      result.activeSubs.map(async (sub) => {
         const [user] = await db
           .select()
           .from(users)
@@ -193,8 +200,8 @@ export async function POST(request: Request) {
           userName: user.name,
           startDate: start,
           endDate: end,
-          reason: reason,
-          bonusDays: blockDays,
+          reason,
+          bonusDays: result.blockDays,
         });
 
         return {
@@ -215,16 +222,16 @@ export async function POST(request: Request) {
     console.error("Failed to send block notification emails:", err);
   }
 
-  // 8. Mark as notified
+  // Mark as notified
   await db
     .update(mentorBlocks)
     .set({ usersNotified: true })
-    .where(eq(mentorBlocks.id, block.id));
+    .where(eq(mentorBlocks.id, result.block.id));
 
   return NextResponse.json({
-    block: { ...block, usersNotified: true },
-    creditedSubscriptions: activeSubs.length,
-    daysPerSubscription: blockDays,
-    cancelledSessions: scheduledSessions.length,
+    block: { ...result.block, usersNotified: true },
+    creditedSubscriptions: result.activeSubs.length,
+    daysPerSubscription: result.blockDays,
+    cancelledSessions: result.scheduledSessionCount,
   });
 }

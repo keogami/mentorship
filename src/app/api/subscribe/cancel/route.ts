@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { users, subscriptions } from "@/lib/db/schema";
 import { razorpay } from "@/lib/razorpay/client";
 import { eq, and } from "drizzle-orm";
+import { validateBody, subscribeCancelSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -16,7 +17,10 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { reason } = body;
+  const parsed = validateBody(subscribeCancelSchema, body);
+  if (!parsed.success) return parsed.response;
+
+  const { reason } = parsed.data;
 
   // Get user from database
   const [user] = await db
@@ -50,8 +54,6 @@ export async function POST(request: Request) {
   }
 
   // Cancel subscription at cycle end in Razorpay
-  // Note: Razorpay doesn't support cancel_at_cycle_end directly,
-  // we need to use the update method to schedule cancellation
   try {
     await razorpay.subscriptions.cancel(subscription.razorpaySubscriptionId);
   } catch (error) {

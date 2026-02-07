@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { escapeHtml } from "../escape";
 
 export type MentorBlockNoticeData = {
   userName: string;
@@ -11,6 +12,8 @@ export type MentorBlockNoticeData = {
 export function mentorBlockNoticeEmail(data: MentorBlockNoticeData) {
   const startStr = format(data.startDate, "EEEE, MMMM d");
   const endStr = format(data.endDate, "EEEE, MMMM d, yyyy");
+  const userName = escapeHtml(data.userName);
+  const reason = escapeHtml(data.reason);
 
   return {
     subject: `Mentor unavailable ${startStr} - ${endStr}`,
@@ -24,13 +27,13 @@ export function mentorBlockNoticeEmail(data: MentorBlockNoticeData) {
 <body style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <h1 style="color: #111; margin-bottom: 24px;">Mentor Unavailable Notice</h1>
 
-  <p>Hi ${data.userName},</p>
+  <p>Hi ${userName},</p>
 
   <p>I wanted to let you know that I will be unavailable for sessions during the following period:</p>
 
   <div style="background: #fef3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 16px; margin: 24px 0;">
     <p style="margin: 0 0 8px 0;"><strong>Dates:</strong> ${startStr} - ${endStr}</p>
-    <p style="margin: 0;"><strong>Reason:</strong> ${data.reason}</p>
+    <p style="margin: 0;"><strong>Reason:</strong> ${reason}</p>
   </div>
 
   <div style="background: #d4edda; border: 1px solid #28a745; border-radius: 8px; padding: 16px; margin: 24px 0;">

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { subscriptions, plans, sessions, users } from "@/lib/db/schema";
+import { subscriptions, plans, sessions, users, webhookEvents } from "@/lib/db/schema";
 import {
   verifyWebhookSignature,
   type RazorpayWebhookPayload,
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   if (!webhookSecret) {
     console.error("RAZORPAY_WEBHOOK_SECRET is not configured");
     return NextResponse.json(
-      { error: "Webhook not configured" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
@@ -45,6 +45,19 @@ export async function POST(request: Request) {
   const payload: RazorpayWebhookPayload = JSON.parse(body);
   const razorpaySubscription = payload.payload.subscription.entity;
   const razorpayPayment = payload.payload.payment?.entity;
+
+  // Idempotency check: skip already-processed events
+  const eventId = `${payload.event}_${razorpaySubscription.id}_${payload.created_at}`;
+  try {
+    await db.insert(webhookEvents).values({
+      id: eventId,
+      event: payload.event,
+    });
+  } catch {
+    // Unique constraint violation = already processed
+    console.log(`Webhook event already processed: ${eventId}`);
+    return NextResponse.json({ received: true });
+  }
 
   console.log(`Received webhook: ${payload.event}`, {
     subscriptionId: razorpaySubscription.id,

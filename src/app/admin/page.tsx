@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import {
   sessions,
@@ -15,6 +17,13 @@ import { razorpay } from "@/lib/razorpay/client";
 import { AdminClient } from "./admin-client";
 
 export default async function AdminPage() {
+  // Defense-in-depth: verify admin access even though middleware also checks
+  const session = await auth();
+  const mentorEmail = process.env.MENTOR_EMAIL;
+  if (!session?.user?.email || !mentorEmail || session.user.email !== mentorEmail) {
+    redirect("/dashboard");
+  }
+
   const now = new Date();
   const todayStart = startOfDay(now);
   const todayEnd = endOfDay(now);

@@ -1,3 +1,5 @@
+import { escapeHtml } from "../escape";
+
 export type MentorAlertData = {
   title: string;
   message: string;
@@ -5,6 +7,9 @@ export type MentorAlertData = {
 };
 
 export function mentorAlertEmail(data: MentorAlertData) {
+  const title = escapeHtml(data.title);
+  const message = escapeHtml(data.message);
+
   const detailsHtml = data.details
     ? `
     <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
@@ -12,8 +17,8 @@ export function mentorAlertEmail(data: MentorAlertData) {
         .map(
           ([key, value]) => `
         <tr>
-          <td style="padding: 8px 12px; border: 1px solid #ddd; font-weight: bold; background: #f9f9f9; white-space: nowrap;">${key}</td>
-          <td style="padding: 8px 12px; border: 1px solid #ddd; font-family: monospace;">${value}</td>
+          <td style="padding: 8px 12px; border: 1px solid #ddd; font-weight: bold; background: #f9f9f9; white-space: nowrap;">${escapeHtml(key)}</td>
+          <td style="padding: 8px 12px; border: 1px solid #ddd; font-family: monospace;">${escapeHtml(value)}</td>
         </tr>`
         )
         .join("")}
@@ -30,10 +35,10 @@ export function mentorAlertEmail(data: MentorAlertData) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <h1 style="color: #111; margin-bottom: 24px;">Alert: ${data.title}</h1>
+  <h1 style="color: #111; margin-bottom: 24px;">Alert: ${title}</h1>
 
   <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin: 24px 0;">
-    <p style="margin: 0; color: #991b1b;">${data.message}</p>
+    <p style="margin: 0; color: #991b1b;">${message}</p>
   </div>
 
   ${detailsHtml}

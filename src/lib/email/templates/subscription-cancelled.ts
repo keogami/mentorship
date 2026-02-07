@@ -1,9 +1,14 @@
+import { escapeHtml } from "../escape";
+
 export type SubscriptionCancelledData = {
   userName: string;
   planName: string;
 };
 
 export function subscriptionCancelledEmail(data: SubscriptionCancelledData) {
+  const userName = escapeHtml(data.userName);
+  const planName = escapeHtml(data.planName);
+
   return {
     subject: `Your ${data.planName} subscription has been cancelled`,
     html: `
@@ -16,9 +21,9 @@ export function subscriptionCancelledEmail(data: SubscriptionCancelledData) {
 <body style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <h1 style="color: #111; margin-bottom: 24px;">Subscription Cancelled</h1>
 
-  <p>Hi ${data.userName},</p>
+  <p>Hi ${userName},</p>
 
-  <p>Your <strong>${data.planName}</strong> subscription has been cancelled. You will no longer be charged.</p>
+  <p>Your <strong>${planName}</strong> subscription has been cancelled. You will no longer be charged.</p>
 
   <p>Any scheduled sessions have been cancelled. If you had unused sessions, they are no longer available.</p>
 
