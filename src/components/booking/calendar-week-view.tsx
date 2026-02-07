@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { TimeSlot } from "./time-slot";
 import type { DaySlots } from "@/lib/booking/slots";
 
@@ -20,20 +20,57 @@ type CalendarWeekViewProps = {
   isBooking?: boolean;
 };
 
-const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
 export function CalendarWeekView({
   days,
   userContext,
   onBook,
   isBooking = false,
 }: CalendarWeekViewProps) {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
   const canBook =
     userContext?.hasActiveSubscription &&
     userContext.sessionsRemaining > 0 &&
     !userContext.hasPendingSession;
+
+  // Build a Map<YYYY-MM-DD, DaySlots> for O(1) lookup
+  const dayMap = useMemo(() => {
+    const map = new Map<string, DaySlots>();
+    for (const day of days) {
+      map.set(day.date, day);
+    }
+    return map;
+  }, [days]);
+
+  // Default month for the calendar (first bookable day)
+  const fromDate = days.length > 0 ? parseISO(days[0].date) : undefined;
+
+  // Set of enabled date strings (within window, not blocked, has at least one available slot or is selectable)
+  const enabledDates = useMemo(() => {
+    const set = new Set<string>();
+    for (const day of days) {
+      set.add(day.date);
+    }
+    return set;
+  }, [days]);
+
+  // Disabled date matcher for the Calendar
+  const disabledMatcher = (date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    return !enabledDates.has(dateStr);
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) {
+      setSelectedDate(null);
+      setSelectedSlot(null);
+      return;
+    }
+    const dateStr = format(date, "yyyy-MM-dd");
+    setSelectedDate(dateStr);
+    setSelectedSlot(null);
+  };
 
   const handleSlotClick = (slotTime: string) => {
     if (canBook) {
@@ -45,8 +82,11 @@ export function CalendarWeekView({
     if (selectedSlot && canBook) {
       await onBook(selectedSlot);
       setSelectedSlot(null);
+      setSelectedDate(null);
     }
   };
+
+  const currentDay = selectedDate ? dayMap.get(selectedDate) : null;
 
   return (
     <div className="space-y-6">
@@ -75,36 +115,40 @@ export function CalendarWeekView({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
-        {days.map((day) => {
-          const date = parseISO(day.date);
-          const isWeekendDay = day.isWeekend;
-          const hasAvailableSlots = day.slots.some((s) => s.available);
+      <div className="flex flex-col md:flex-row items-start justify-center gap-6">
+        {/* Calendar picker */}
+        <div className="shrink-0 self-center md:self-start">
+          <Calendar
+            mode="single"
+            selected={selectedDate ? parseISO(selectedDate) : undefined}
+            onSelect={handleDateSelect}
+            disabled={disabledMatcher}
+            defaultMonth={fromDate}
+          />
+        </div>
 
-          return (
-            <Card
-              key={day.date}
-              className={cn(
-                "overflow-hidden",
-                day.mentorBlocked && "opacity-60",
-                isWeekendDay && !userContext?.weekendAccess && "opacity-50"
-              )}
-            >
-              <CardHeader className="p-3 pb-2">
-                <CardTitle className="text-center text-sm">
-                  <div className="font-medium">{dayNames[day.dayOfWeek]}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {format(date, "MMM d")}
-                  </div>
-                </CardTitle>
-                {day.mentorBlocked && (
-                  <div className="text-center text-xs text-destructive">
-                    Unavailable
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-1 p-2">
-                {day.slots.map((slot) => (
+        {/* Time slots panel */}
+        <div className="flex-1 min-w-0">
+          {!selectedDate ? (
+            <div className="flex h-full items-center justify-center rounded-lg border border-dashed p-8 text-muted-foreground">
+              Select a date to view available times
+            </div>
+          ) : currentDay ? (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">
+                {format(parseISO(selectedDate), "EEEE, MMM d")}
+              </h3>
+              {currentDay.mentorBlocked ? (
+                <div className="text-sm text-destructive">
+                  Mentor is unavailable on this day.
+                </div>
+              ) : currentDay.slots.every((s) => !s.available) ? (
+                <div className="text-sm text-muted-foreground">
+                  No available slots on this day.
+                </div>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                {currentDay.slots.map((slot) => (
                   <TimeSlot
                     key={slot.time}
                     time={slot.time}
@@ -116,15 +160,10 @@ export function CalendarWeekView({
                     onClick={() => handleSlotClick(slot.time)}
                   />
                 ))}
-                {!hasAvailableSlots && !day.mentorBlocked && (
-                  <div className="py-2 text-center text-xs text-muted-foreground">
-                    No slots available
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {selectedSlot && canBook && (

@@ -9,7 +9,7 @@ import {
   packs,
   users,
 } from "@/lib/db/schema";
-import { eq, and, gte, lt, desc } from "drizzle-orm";
+import { eq, and, gte, lte, lt, desc } from "drizzle-orm";
 import { differenceInCalendarDays, parseISO, addDays } from "date-fns";
 import { deleteCalendarEvent } from "@/lib/google-calendar/client";
 import { sendBulkEmails, mentorBlockNoticeEmail } from "@/lib/email";
@@ -44,6 +44,25 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "endDate must be on or after startDate" },
       { status: 400 }
+    );
+  }
+
+  // Check for overlapping blocks
+  const overlapping = await db
+    .select({ id: mentorBlocks.id })
+    .from(mentorBlocks)
+    .where(
+      and(
+        lte(mentorBlocks.startDate, endDate),
+        gte(mentorBlocks.endDate, startDate)
+      )
+    )
+    .limit(1);
+
+  if (overlapping.length > 0) {
+    return NextResponse.json(
+      { error: "This range overlaps with an existing block" },
+      { status: 409 }
     );
   }
 

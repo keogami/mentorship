@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { format, parseISO } from "date-fns";
+import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,9 +12,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,19 +42,37 @@ type BlocksTabProps = {
 
 export function BlocksTab({ blocks }: BlocksTabProps) {
   const router = useRouter();
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [reason, setReason] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const rangeComplete = dateRange?.from && dateRange?.to;
+
+  // Build list of already-blocked date ranges for the calendar disabled matcher
+  const blockedRanges = useMemo(() => {
+    const ranges: { from: Date; to: Date }[] = [];
+    for (const block of blocks) {
+      ranges.push({
+        from: parseISO(block.startDate),
+        to: parseISO(block.endDate),
+      });
+    }
+    return ranges;
+  }, [blocks]);
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    if (!dateRange?.from || !dateRange?.to) return;
+
     setIsCreating(true);
     setError(null);
     setSuccess(null);
+
+    const startDate = format(dateRange.from, "yyyy-MM-dd");
+    const endDate = format(dateRange.to, "yyyy-MM-dd");
 
     try {
       const response = await fetch("/admin/api/blocks", {
@@ -70,8 +90,7 @@ export function BlocksTab({ blocks }: BlocksTabProps) {
       setSuccess(
         `Block created. ${data.creditedSubscriptions} subscription(s) credited with ${data.daysPerSubscription} day(s).`
       );
-      setStartDate("");
-      setEndDate("");
+      setDateRange(undefined);
       setReason("");
       router.refresh();
     } catch (err) {
@@ -129,27 +148,22 @@ export function BlocksTab({ blocks }: BlocksTabProps) {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleCreate} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>Date Range</Label>
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                onSelect={setDateRange}
+                startMonth={new Date()}
+                disabled={[{ before: new Date() }, ...blockedRanges]}
+                numberOfMonths={2}
+              />
+              {rangeComplete && (
+                <p className="text-sm text-muted-foreground">
+                  {format(dateRange.from!, "MMM d, yyyy")} &mdash;{" "}
+                  {format(dateRange.to!, "MMM d, yyyy")}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="reason">Reason</Label>
@@ -161,7 +175,7 @@ export function BlocksTab({ blocks }: BlocksTabProps) {
                 required
               />
             </div>
-            <Button type="submit" disabled={isCreating}>
+            <Button type="submit" disabled={isCreating || !rangeComplete || !reason.trim()}>
               {isCreating ? "Creating..." : "Create Block"}
             </Button>
           </form>

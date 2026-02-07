@@ -47,15 +47,16 @@ export function TimeSlot({
       size="sm"
       disabled={!isClickable}
       onClick={isClickable ? onClick : undefined}
+      title={!effectiveAvailable && effectiveReason ? reasonMessages[effectiveReason] : undefined}
       className={cn(
-        "w-full justify-start font-mono text-sm min-h-[44px]",
+        "rounded-full px-4 py-2 min-h-[44px] font-mono text-sm",
         !effectiveAvailable && "opacity-50 cursor-not-allowed",
         selected && "ring-2 ring-primary"
       )}
     >
       <span>{formatHour(hour)}</span>
       {!effectiveAvailable && effectiveReason && (
-        <span className="ml-auto text-xs text-muted-foreground">
+        <span className="ml-2 text-xs text-muted-foreground">
           {reasonMessages[effectiveReason]}
         </span>
       )}
