@@ -20,3 +20,8 @@ export {
   mentorCancelledUserEmail,
   type MentorCancelledUserData,
 } from "./templates/mentor-cancelled-user";
+
+export {
+  mentorAlertEmail,
+  type MentorAlertData,
+} from "./templates/mentor-alert";

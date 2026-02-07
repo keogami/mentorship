@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { users, plans, subscriptions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { validateBody, subscribeChangeSchema } from "@/lib/validation";
+import { razorpay } from "@/lib/razorpay/client";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -88,7 +89,14 @@ export async function POST(request: Request) {
     );
   }
 
-  // Set the pending plan change
+  // Schedule the plan change in Razorpay
+  await razorpay.subscriptions.update(subscription.razorpaySubscriptionId, {
+    plan_id: newPlan.razorpayPlanId,
+    schedule_change_at: "cycle_end",
+    customer_notify: true,
+  });
+
+  // Store pending plan change in DB for UI display
   await db
     .update(subscriptions)
     .set({
@@ -151,7 +159,27 @@ export async function DELETE() {
     );
   }
 
-  // Clear the pending plan change
+  // Get current plan to revert Razorpay back to it
+  const [currentPlan] = await db
+    .select()
+    .from(plans)
+    .where(eq(plans.id, subscription.planId));
+
+  if (!currentPlan?.razorpayPlanId) {
+    return NextResponse.json(
+      { error: "Current plan is not configured for payments" },
+      { status: 500 }
+    );
+  }
+
+  // Revert the scheduled change in Razorpay
+  await razorpay.subscriptions.update(subscription.razorpaySubscriptionId, {
+    plan_id: currentPlan.razorpayPlanId,
+    schedule_change_at: "cycle_end",
+    customer_notify: false,
+  });
+
+  // Clear the pending plan change in DB
   await db
     .update(subscriptions)
     .set({

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { subscriptions, plans, sessions, users } from "@/lib/db/schema";
-import { razorpay } from "@/lib/razorpay/client";
 import {
   verifyWebhookSignature,
   type RazorpayWebhookPayload,
@@ -12,6 +11,7 @@ import {
   sendEmail,
   subscriptionActivatedEmail,
   subscriptionCancelledEmail,
+  mentorAlertEmail,
 } from "@/lib/email";
 
 export async function POST(request: Request) {
@@ -168,49 +168,50 @@ async function handleSubscriptionCharged(
     ? { latestPaymentId: razorpayPayment.id }
     : {};
 
-  // Check if there's a pending plan change
-  if (subscription.pendingPlanChangeId) {
+  // Detect plan change: compare Razorpay's plan_id against our current plan
+  const [currentPlan] = await db
+    .select()
+    .from(plans)
+    .where(eq(plans.id, subscription.planId));
+
+  let planUpdate: { planId: string; pendingPlanChangeId: null } | Record<string, never> = {};
+
+  if (currentPlan && currentPlan.razorpayPlanId !== razorpaySubscription.plan_id) {
+    // Plan changed — Razorpay executed the scheduled update
     const [newPlan] = await db
       .select()
       .from(plans)
-      .where(eq(plans.id, subscription.pendingPlanChangeId));
+      .where(eq(plans.razorpayPlanId, razorpaySubscription.plan_id));
 
-    if (newPlan?.razorpayPlanId) {
-      // Cancel old Razorpay subscription
-      await razorpay.subscriptions.cancel(razorpaySubscription.id);
+    if (newPlan) {
+      planUpdate = { planId: newPlan.id, pendingPlanChangeId: null };
+      console.log(`Plan changed for subscription: ${subscription.id} (${currentPlan.slug} → ${newPlan.slug})`);
+    } else {
+      console.error(`Unknown Razorpay plan_id in webhook: ${razorpaySubscription.plan_id}`);
 
-      // Create new subscription on new plan
-      const newRzpSub = await razorpay.subscriptions.create({
-        plan_id: newPlan.razorpayPlanId,
-        total_count: 120,
-        customer_notify: 1,
-        notes: {
-          user_id: subscription.userId,
-          plan_id: newPlan.id,
-        },
-      });
-
-      // Update subscription with new plan
-      await db
-        .update(subscriptions)
-        .set({
-          planId: newPlan.id,
-          razorpaySubscriptionId: newRzpSub.id,
-          pendingPlanChangeId: null,
-          currentPeriodStart: periodStart,
-          currentPeriodEnd: periodEnd,
-          sessionsUsedThisPeriod: 0,
-          status: "active",
-          ...paymentUpdate,
-        })
-        .where(eq(subscriptions.id, subscription.id));
-
-      console.log(`Plan changed for subscription: ${subscription.id}`);
-      return;
+      try {
+        const mentorEmail = process.env.MENTOR_EMAIL;
+        if (mentorEmail) {
+          const emailContent = mentorAlertEmail({
+            title: "Unknown Razorpay Plan ID",
+            message:
+              "A subscription was charged with a Razorpay plan_id that doesn't match any plan in the database. The subscription was renewed but the plan was NOT updated.",
+            details: {
+              "Subscription ID": subscription.id,
+              "Razorpay Subscription ID": razorpaySubscription.id,
+              "Unknown Razorpay Plan ID": razorpaySubscription.plan_id,
+              "Current Plan": currentPlan.slug,
+            },
+          });
+          await sendEmail({ to: mentorEmail, ...emailContent });
+        }
+      } catch (err) {
+        console.error("Failed to send mentor alert email:", err);
+      }
     }
   }
 
-  // Normal renewal - reset session counter
+  // Renewal: reset session counter and update period (with plan change if applicable)
   await db
     .update(subscriptions)
     .set({
@@ -219,6 +220,7 @@ async function handleSubscriptionCharged(
       sessionsUsedThisPeriod: 0,
       status: "active",
       ...paymentUpdate,
+      ...planUpdate,
     })
     .where(eq(subscriptions.id, subscription.id));
 
