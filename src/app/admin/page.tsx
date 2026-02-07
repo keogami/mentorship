@@ -11,6 +11,7 @@ import {
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { startOfDay, endOfDay, startOfWeek, endOfWeek } from "date-fns";
 import { MENTOR_CONFIG } from "@/lib/constants";
+import { razorpay } from "@/lib/razorpay/client";
 import { AdminClient } from "./admin-client";
 
 export default async function AdminPage() {
@@ -95,6 +96,7 @@ export default async function AdminPage() {
         userCreatedAt: users.createdAt,
         subscriptionId: subscriptions.id,
         subscriptionStatus: subscriptions.status,
+        razorpayCustomerId: subscriptions.razorpayCustomerId,
         sessionsUsedThisPeriod: subscriptions.sessionsUsedThisPeriod,
         currentPeriodEnd: subscriptions.currentPeriodEnd,
         cancelledAt: subscriptions.cancelledAt,
@@ -116,6 +118,31 @@ export default async function AdminPage() {
     db.select().from(mentorConfig).limit(1),
   ]);
 
+  // Batch-fetch customer contacts from Razorpay
+  const customerContactMap = new Map<string, string | null>();
+  try {
+    const customerIds = [
+      ...new Set(
+        allUsers
+          .map((u) => u.razorpayCustomerId)
+          .filter((id): id is string => id != null)
+      ),
+    ];
+    if (customerIds.length > 0) {
+      const { items: customers } = await razorpay.customers.all({
+        count: 100,
+      });
+      for (const customer of customers) {
+        customerContactMap.set(
+          customer.id,
+          (customer as { id: string; contact?: string }).contact ?? null
+        );
+      }
+    }
+  } catch (err) {
+    console.error("Failed to fetch Razorpay customers:", err);
+  }
+
   // Group users by most recent subscription, serialize dates for client
   const seenUserIds = new Set<string>();
   const serializedUsers = allUsers.reduce<
@@ -125,6 +152,7 @@ export default async function AdminPage() {
       email: string;
       blocked: boolean;
       createdAt: string;
+      contact: string | null;
       subscription: {
         id: string;
         status: string;
@@ -147,6 +175,9 @@ export default async function AdminPage() {
         email: row.userEmail,
         blocked: row.userBlocked,
         createdAt: row.userCreatedAt.toISOString(),
+        contact: row.razorpayCustomerId
+          ? customerContactMap.get(row.razorpayCustomerId) ?? null
+          : null,
         subscription: {
           id: row.subscriptionId,
           status: row.subscriptionStatus,

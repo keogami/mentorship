@@ -45,6 +45,7 @@ type AdminUser = {
   email: string;
   blocked: boolean;
   createdAt: string;
+  contact: string | null;
   subscription: UserSubscription;
 };
 
@@ -147,11 +148,12 @@ export function UsersTab({ users }: UsersTabProps) {
         <p className="text-sm text-muted-foreground">No subscribers yet.</p>
       ) : (
         <div className="rounded-md border overflow-x-auto">
-          <Table className="min-w-[700px]">
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Contact</TableHead>
                 <TableHead>Plan</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Sessions</TableHead>
@@ -175,6 +177,7 @@ export function UsersTab({ users }: UsersTabProps) {
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.contact ?? "\u2014"}</TableCell>
                     <TableCell>{sub.planName}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">

@@ -109,6 +109,7 @@ async function handleSubscriptionActivated(
       currentPeriodStart: periodStart,
       currentPeriodEnd: periodEnd,
       sessionsUsedThisPeriod: 0,
+      razorpayCustomerId: razorpaySubscription.customer_id,
       ...(razorpayPayment?.id && {
         latestPaymentId: razorpayPayment.id,
       }),
@@ -219,6 +220,7 @@ async function handleSubscriptionCharged(
       currentPeriodEnd: periodEnd,
       sessionsUsedThisPeriod: 0,
       status: "active",
+      razorpayCustomerId: razorpaySubscription.customer_id,
       ...paymentUpdate,
       ...planUpdate,
     })

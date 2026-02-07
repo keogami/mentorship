@@ -50,6 +50,7 @@ type AdminUser = {
   email: string;
   blocked: boolean;
   createdAt: string;
+  contact: string | null;
   subscription: {
     id: string;
     status: string;
