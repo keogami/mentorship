@@ -2,12 +2,17 @@ import { addMonths, startOfMonth } from "date-fns"
 import { and, eq, gt, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
+import { checkCsrf } from "@/lib/csrf"
 import { db } from "@/lib/db"
 import { couponRedemptions, coupons, packs, users } from "@/lib/db/schema"
+import type { Pack } from "@/lib/db/types"
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit"
 import { redeemSchema, validateBody } from "@/lib/validation"
 
 export async function POST(request: Request) {
+  const csrfError = checkCsrf(request)
+  if (csrfError) return csrfError
+
   const session = await auth()
 
   if (!session?.user?.email) {
@@ -101,7 +106,7 @@ export async function POST(request: Request) {
       .for("update")
       .limit(1)
 
-    let pack
+    let pack: Pack
     if (existing) {
       ;[pack] = await tx
         .update(packs)

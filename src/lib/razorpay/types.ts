@@ -1,5 +1,6 @@
-// TODO: razorpay already has typescript definitions: https://github.com/razorpay/razorpay-node/blob/master/lib/razorpay.d.ts
-// remove all this unnecessary typings in favor of the official one
+// The `razorpay` npm package ships server-side types (subscriptions, payments, etc.).
+// These client-side types (RazorpayOptions, RazorpayInstance, Window.Razorpay) are
+// for the browser checkout modal loaded via <script>, which has no official typings.
 export type RazorpayOptions = {
   key: string
   subscription_id: string

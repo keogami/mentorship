@@ -1,6 +1,7 @@
 import { desc } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/admin/auth"
+import { checkCsrf } from "@/lib/csrf"
 import { db } from "@/lib/db"
 import { coupons } from "@/lib/db/schema"
 import { createCouponSchema, validateBody } from "@/lib/validation"
@@ -18,6 +19,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const csrfError = checkCsrf(request)
+  if (csrfError) return csrfError
+
   const adminCheck = await requireAdmin()
   if (!adminCheck.authorized) return adminCheck.response
 

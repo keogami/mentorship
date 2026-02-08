@@ -32,7 +32,7 @@ export type EmailMessage = {
   html: string
 }
 
-// TODO: use a proper templating system for generating email. can just use react for this tbh
+// DEFERRED: migrate to React Email for templating when doing an email overhaul
 export async function sendEmail(message: EmailMessage): Promise<void> {
   const gmail = getGmail()
   const mentorEmail = process.env.MENTOR_EMAIL
@@ -74,7 +74,7 @@ export async function sendEmail(message: EmailMessage): Promise<void> {
 
 export async function sendBulkEmails(messages: EmailMessage[]): Promise<void> {
   // Send emails in parallel, but with a limit to avoid rate limiting
-  // TODO: make the batch size configurable via the admin panel
+  // DEFERRED: make batch size configurable via admin panel (needs DB schema + UI)
   const batchSize = 5
   for (let i = 0; i < messages.length; i += batchSize) {
     const batch = messages.slice(i, i + batchSize)

@@ -2,6 +2,7 @@ import { addDays, differenceInCalendarDays, parseISO } from "date-fns"
 import { and, desc, eq, gte, lt, lte, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/admin/auth"
+import { checkCsrf } from "@/lib/csrf"
 import { db } from "@/lib/db"
 import {
   mentorBlocks,
@@ -28,6 +29,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const csrfError = checkCsrf(request)
+  if (csrfError) return csrfError
+
   const adminCheck = await requireAdmin()
   if (!adminCheck.authorized) return adminCheck.response
 

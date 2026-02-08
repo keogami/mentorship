@@ -8,8 +8,6 @@ import { NextResponse } from "next/server"
  * Requests without an Origin header are allowed (direct API calls, curl, etc.)
  */
 
-// TODO: actually use CSRF protection
-
 export function checkCsrf(request: Request): NextResponse | null {
   const method = request.method.toUpperCase()
   if (method === "GET" || method === "HEAD" || method === "OPTIONS") {

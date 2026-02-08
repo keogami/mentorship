@@ -12,8 +12,8 @@ export default function AdminLoading() {
 
         {/* Stats cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}>
+          {["stat-1", "stat-2", "stat-3", "stat-4"].map((key) => (
+            <Card key={key}>
               <CardHeader className="pb-2">
                 <Skeleton className="h-4 w-28" />
               </CardHeader>
@@ -33,9 +33,9 @@ export default function AdminLoading() {
             <Skeleton className="h-6 w-40" />
           </CardHeader>
           <CardContent className="space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
+            {["row-1", "row-2", "row-3", "row-4", "row-5"].map((key) => (
               <div
-                key={i}
+                key={key}
                 className="flex items-center justify-between border-b pb-4 last:border-0"
               >
                 <div className="space-y-2">

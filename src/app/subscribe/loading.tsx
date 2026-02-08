@@ -11,8 +11,8 @@ export default function SubscribeLoading() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className={i === 1 ? "border-primary" : ""}>
+          {["plan-1", "plan-featured", "plan-3"].map((key) => (
+            <Card key={key} className={key === "plan-featured" ? "border-primary" : ""}>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
                 <Skeleton className="mt-2 h-4 w-24" />

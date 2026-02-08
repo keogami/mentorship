@@ -2,7 +2,7 @@ import Razorpay from "razorpay"
 
 let razorpayInstance: Razorpay | null = null
 
-function getRazorpay(): Razorpay {
+export function getRazorpay(): Razorpay {
   if (!razorpayInstance) {
     if (!process.env.RAZORPAY_KEY_ID) {
       throw new Error("RAZORPAY_KEY_ID is not set")
@@ -21,14 +21,11 @@ function getRazorpay(): Razorpay {
   return razorpayInstance
 }
 
-// TODO: this is an unnecessary use of proxy
-export const razorpay = new Proxy({} as Razorpay, {
-  get(_target, prop) {
-    return getRazorpay()[prop as keyof Razorpay]
-  },
-})
-
-// TODO: looks redundant
+/**
+ * Returns the Razorpay key ID for client-side checkout.
+ * Exists as a single validation point for the env var — the key is needed
+ * both server-side (in getRazorpay) and client-side (passed to the checkout modal).
+ */
 export function getRazorpayKeyId(): string {
   const keyId = process.env.RAZORPAY_KEY_ID
   if (!keyId) {

@@ -6,7 +6,7 @@
  * brute-force attacks while being simple and dependency-free.
  */
 
-// TODO: this should be replaced with vercel/edge ratelimitting
+// DEFERRED: replace with @vercel/kv rate limiting when scaling beyond single instance
 
 type RateLimitEntry = {
   count: number

@@ -1,12 +1,16 @@
 import { and, eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
+import { checkCsrf } from "@/lib/csrf"
 import { db } from "@/lib/db"
 import { plans, subscriptions, users } from "@/lib/db/schema"
-import { razorpay } from "@/lib/razorpay/client"
+import { getRazorpay } from "@/lib/razorpay/client"
 import { subscribeSchema, validateBody } from "@/lib/validation"
 
 export async function POST(request: Request) {
+  const csrfError = checkCsrf(request)
+  if (csrfError) return csrfError
+
   const session = await auth()
 
   if (!session?.user?.email) {
@@ -96,7 +100,7 @@ export async function POST(request: Request) {
   for (const pending of pendingSubscriptions) {
     // Cancel in Razorpay (ignore errors - may already be cancelled)
     try {
-      await razorpay.subscriptions.cancel(pending.razorpaySubscriptionId)
+      await getRazorpay().subscriptions.cancel(pending.razorpaySubscriptionId)
     } catch {
       // Subscription may already be cancelled or in a state that can't be cancelled
     }
@@ -106,7 +110,7 @@ export async function POST(request: Request) {
   }
 
   // Create Razorpay subscription
-  const razorpaySubscription = await razorpay.subscriptions.create({
+  const razorpaySubscription = await getRazorpay().subscriptions.create({
     plan_id: plan.razorpayPlanId,
     total_count: 120, // ~10 years max billing cycles
     customer_notify: 1,

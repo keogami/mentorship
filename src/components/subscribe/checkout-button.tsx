@@ -92,7 +92,7 @@ export function CheckoutButton({
       onError?.(message)
       setIsLoading(false)
     }
-  }, [planId, planName, razorpayKeyId, scriptLoaded, onSuccess, onError])
+  }, [planId, planName, razorpayKeyId, userEmail, scriptLoaded, onSuccess, onError])
 
   return (
     <Button

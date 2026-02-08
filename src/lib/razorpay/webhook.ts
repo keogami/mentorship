@@ -1,26 +1,15 @@
-import crypto from "node:crypto"
+import Razorpay from "razorpay"
 
-// TODO: check docs razorpay's native signature validation and use that instead: https://github.com/razorpay/razorpay-node/blob/92fe1ceb9300eae630824e4618f640fe7d6e6c0c/lib/razorpay.js#L12
 export function verifyWebhookSignature(
   body: string,
   signature: string,
   secret: string
 ): boolean {
-  const expectedSignature = crypto
-    .createHmac("sha256", secret)
-    .update(body)
-    .digest("hex")
-
-  const sigBuffer = Buffer.from(signature)
-  const expectedBuffer = Buffer.from(expectedSignature)
-
-  // timingSafeEqual throws RangeError if buffers have different lengths
-  // TODO: this if statment partially circumvents the use of timingSafeEqual. just wrap in try/catch instead
-  if (sigBuffer.length !== expectedBuffer.length) {
+  try {
+    return Razorpay.validateWebhookSignature(body, signature, secret)
+  } catch {
     return false
   }
-
-  return crypto.timingSafeEqual(sigBuffer, expectedBuffer)
 }
 
 export type RazorpaySubscriptionEvent =

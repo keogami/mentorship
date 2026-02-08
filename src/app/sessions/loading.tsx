@@ -31,9 +31,9 @@ export default function SessionsLoading() {
             <Skeleton className="h-6 w-32" />
           </CardHeader>
           <CardContent className="space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
+            {["row-1", "row-2", "row-3", "row-4", "row-5"].map((key) => (
               <div
-                key={i}
+                key={key}
                 className="flex items-center justify-between border-b pb-4 last:border-0"
               >
                 <div className="space-y-2">

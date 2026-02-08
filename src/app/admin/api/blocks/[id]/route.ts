@@ -1,13 +1,17 @@
 import { eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/admin/auth"
+import { checkCsrf } from "@/lib/csrf"
 import { db } from "@/lib/db"
 import { mentorBlocks, subscriptionCredits } from "@/lib/db/schema"
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const csrfError = checkCsrf(request)
+  if (csrfError) return csrfError
+
   const adminCheck = await requireAdmin()
   if (!adminCheck.authorized) return adminCheck.response
 

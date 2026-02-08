@@ -1,12 +1,16 @@
 import { and, eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
+import { checkCsrf } from "@/lib/csrf"
 import { db } from "@/lib/db"
 import { subscriptions, users } from "@/lib/db/schema"
-import { razorpay } from "@/lib/razorpay/client"
+import { getRazorpay } from "@/lib/razorpay/client"
 import { subscribeCancelSchema, validateBody } from "@/lib/validation"
 
 export async function POST(request: Request) {
+  const csrfError = checkCsrf(request)
+  if (csrfError) return csrfError
+
   const session = await auth()
 
   if (!session?.user?.email) {
@@ -49,7 +53,7 @@ export async function POST(request: Request) {
 
   // Cancel subscription at cycle end in Razorpay
   try {
-    await razorpay.subscriptions.cancel(subscription.razorpaySubscriptionId)
+    await getRazorpay().subscriptions.cancel(subscription.razorpaySubscriptionId)
   } catch (error) {
     console.error("Failed to cancel Razorpay subscription:", error)
     return NextResponse.json(

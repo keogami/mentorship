@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { signOut, useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
@@ -20,9 +21,11 @@ export function AuthButton() {
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           {session.user.image && (
-            <img
+            <Image
               src={session.user.image}
               alt=""
+              width={28}
+              height={28}
               className="h-7 w-7 rounded-full"
               referrerPolicy="no-referrer"
             />

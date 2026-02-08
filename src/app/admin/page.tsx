@@ -13,7 +13,7 @@ import {
   subscriptions,
   users,
 } from "@/lib/db/schema"
-import { razorpay } from "@/lib/razorpay/client"
+import { getRazorpay } from "@/lib/razorpay/client"
 import { AdminClient } from "./admin-client"
 
 export default async function AdminPage() {
@@ -150,7 +150,7 @@ export default async function AdminPage() {
       ),
     ]
     if (customerIds.length > 0) {
-      const { items: customers } = await razorpay.customers.all({
+      const { items: customers } = await getRazorpay().customers.all({
         count: 100,
       })
       for (const customer of customers) {

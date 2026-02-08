@@ -1,12 +1,16 @@
 import { and, eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
+import { checkCsrf } from "@/lib/csrf"
 import { db } from "@/lib/db"
 import { plans, subscriptions, users } from "@/lib/db/schema"
-import { razorpay } from "@/lib/razorpay/client"
+import { getRazorpay } from "@/lib/razorpay/client"
 import { subscribeChangeSchema, validateBody } from "@/lib/validation"
 
 export async function POST(request: Request) {
+  const csrfError = checkCsrf(request)
+  if (csrfError) return csrfError
+
   const session = await auth()
 
   if (!session?.user?.email) {
@@ -88,7 +92,7 @@ export async function POST(request: Request) {
   }
 
   // Schedule the plan change in Razorpay
-  await razorpay.subscriptions.update(subscription.razorpaySubscriptionId, {
+  await getRazorpay().subscriptions.update(subscription.razorpaySubscriptionId, {
     plan_id: newPlan.razorpayPlanId,
     schedule_change_at: "cycle_end",
     customer_notify: true,
@@ -109,7 +113,10 @@ export async function POST(request: Request) {
   })
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
+  const csrfError = checkCsrf(request)
+  if (csrfError) return csrfError
+
   const session = await auth()
 
   if (!session?.user?.email) {
@@ -165,7 +172,7 @@ export async function DELETE() {
   }
 
   // Revert the scheduled change in Razorpay
-  await razorpay.subscriptions.update(subscription.razorpaySubscriptionId, {
+  await getRazorpay().subscriptions.update(subscription.razorpaySubscriptionId, {
     plan_id: currentPlan.razorpayPlanId,
     schedule_change_at: "cycle_end",
     customer_notify: false,

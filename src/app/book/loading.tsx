@@ -16,12 +16,12 @@ export default function BookLoading() {
         <Card className="border-none shadow-none bg-transparent">
           <CardContent className="p-0">
             <div className="grid grid-cols-7 gap-2">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <div key={i} className="space-y-2">
+              {["d-1", "d-2", "d-3", "d-4", "d-5", "d-6", "d-7"].map((key) => (
+                <div key={key} className="space-y-2">
                   <Skeleton className="h-6 w-full" />
                   <div className="space-y-1">
-                    {Array.from({ length: 8 }).map((_, j) => (
-                      <Skeleton key={j} className="h-10 w-full" />
+                    {["s-1", "s-2", "s-3", "s-4", "s-5", "s-6", "s-7", "s-8"].map((sk) => (
+                      <Skeleton key={sk} className="h-10 w-full" />
                     ))}
                   </div>
                 </div>

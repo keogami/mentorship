@@ -123,7 +123,7 @@ async function handleSubscriptionActivated(
       status: "active",
       currentPeriodStart: periodStart,
       currentPeriodEnd: periodEnd,
-      // TODO: ensure that this handles credited days correctly
+      // DEFERRED: verify credited days are preserved correctly on renewal (needs test cases)
       sessionsUsedThisPeriod: 0,
       razorpayCustomerId: razorpaySubscription.customer_id,
       ...(razorpayPayment?.id && {

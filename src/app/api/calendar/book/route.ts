@@ -11,6 +11,7 @@ import { and, eq, gte, inArray, lte, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { MENTOR_CONFIG } from "@/lib/constants"
+import { checkCsrf } from "@/lib/csrf"
 import { db } from "@/lib/db"
 import {
   mentorBlocks,
@@ -29,6 +30,9 @@ import { bookSessionSchema, validateBody } from "@/lib/validation"
 const IST_TIMEZONE = "Asia/Kolkata"
 
 export async function POST(request: Request) {
+  const csrfError = checkCsrf(request)
+  if (csrfError) return csrfError
+
   const session = await auth()
 
   if (!session?.user?.email) {
@@ -230,7 +234,7 @@ export async function POST(request: Request) {
     // 9. Check weekend access
     const istDate = toZonedTime(scheduledAt, IST_TIMEZONE)
     const weekendAccessAllowed =
-      (subscription && subscription.plan.weekendAccess) || !!pack
+      subscription?.plan.weekendAccess || !!pack
     if (isWeekend(istDate) && !weekendAccessAllowed) {
       return {
         error:

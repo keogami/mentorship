@@ -19,13 +19,12 @@ export async function proxy(request: NextRequest) {
   )
   const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route))
 
-  // Redirect unauthenticated users from protected routes to subscribe
+  // Redirect unauthenticated users from protected routes to sign-in
   if ((isProtectedRoute || isAdminRoute) && !isAuthenticated) {
-    // TODO: should take to signin page
-    const subscribeUrl = new URL("/subscribe", request.url)
+    const signinUrl = new URL("/signin", request.url)
     // Only pass the pathname as callbackUrl (not full URL) to prevent open redirects
-    subscribeUrl.searchParams.set("callbackUrl", pathname)
-    return NextResponse.redirect(subscribeUrl)
+    signinUrl.searchParams.set("callbackUrl", pathname)
+    return NextResponse.redirect(signinUrl)
   }
 
   // Admin route protection: only MENTOR_EMAIL can access

@@ -13,7 +13,7 @@ import { fromZonedTime, toZonedTime } from "date-fns-tz"
 import { and, eq, gte, inArray, lte } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { mentorBlocks, sessions } from "@/lib/db/schema"
-import { getMentorConfig } from "./validation"
+import { getMentorConfig } from "@/lib/db/queries"
 
 const IST_TIMEZONE = "Asia/Kolkata"
 const SLOT_HOURS = [14, 15, 16, 17, 18] // 2PM - 6PM IST
@@ -69,7 +69,7 @@ export async function generateSlots(
   const days: DaySlots[] = []
 
   // Generate slots for next 7 days starting from tomorrow
-  // TODO: make this run in parallel
+  // DEFERRED: parallelize loop + batch queries (requires restructuring; do with benchmarks)
   for (let i = 1; i <= config.bookingWindowDays; i++) {
     const dayStart = startOfDay(addDays(now, i))
     const dayEnd = endOfDay(dayStart)
@@ -79,8 +79,7 @@ export async function generateSlots(
     const dayIsWeekend = isWeekend(istDayStart)
 
     // Check if mentor is blocked this day
-    // TODO: make this a prepared statement to avoid unnecessary performance cost
-    // or better yet, do it in a single query.
+    // DEFERRED: consolidate into single batch query across all days
     const [block] = await db
       .select({ id: mentorBlocks.id })
       .from(mentorBlocks)
@@ -95,7 +94,6 @@ export async function generateSlots(
     const mentorBlocked = !!block
 
     // Get all booked sessions for this day
-    // TODO: same as above
     const bookedSessions = await db
       .select({
         scheduledAt: sessions.scheduledAt,
@@ -117,7 +115,6 @@ export async function generateSlots(
     )
 
     // Check if user already booked this day
-    // TODO: same as above
     let userBookedThisDay = false
     if (userId) {
       const [userSession] = await db

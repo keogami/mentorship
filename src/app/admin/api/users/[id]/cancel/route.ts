@@ -1,17 +1,21 @@
 import { and, eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/admin/auth"
+import { checkCsrf } from "@/lib/csrf"
 import { db } from "@/lib/db"
 import { plans, sessions, subscriptions, users } from "@/lib/db/schema"
 import { mentorCancelledUserEmail, sendEmail } from "@/lib/email"
 import { deleteCalendarEvent } from "@/lib/google-calendar/client"
-import { razorpay } from "@/lib/razorpay/client"
+import { getRazorpay } from "@/lib/razorpay/client"
 import { cancelUserSchema, validateBody } from "@/lib/validation"
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const csrfError = checkCsrf(request)
+  if (csrfError) return csrfError
+
   const adminCheck = await requireAdmin()
   if (!adminCheck.authorized) return adminCheck.response
 
@@ -58,7 +62,7 @@ export async function POST(
 
   // 4. Cancel Razorpay subscription
   try {
-    await razorpay.subscriptions.cancel(subscription.razorpaySubscriptionId)
+    await getRazorpay().subscriptions.cancel(subscription.razorpaySubscriptionId)
   } catch (err) {
     console.error("Failed to cancel Razorpay subscription:", err)
     return NextResponse.json(
@@ -70,7 +74,7 @@ export async function POST(
   // 5. Issue refund using stored payment ID from webhook
   if (refundAmountPaise > 0 && subscription.latestPaymentId) {
     try {
-      await razorpay.payments.refund(subscription.latestPaymentId, {
+      await getRazorpay().payments.refund(subscription.latestPaymentId, {
         amount: refundAmountPaise,
       })
     } catch (err) {

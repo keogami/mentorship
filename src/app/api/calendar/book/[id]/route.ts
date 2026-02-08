@@ -3,6 +3,7 @@ import { and, eq, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { MENTOR_CONFIG } from "@/lib/constants"
+import { checkCsrf } from "@/lib/csrf"
 import { db } from "@/lib/db"
 import {
   mentorConfig,
@@ -14,9 +15,12 @@ import {
 import { deleteCalendarEvent } from "@/lib/google-calendar/client"
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const csrfError = checkCsrf(request)
+  if (csrfError) return csrfError
+
   const session = await auth()
 
   if (!session?.user?.email) {

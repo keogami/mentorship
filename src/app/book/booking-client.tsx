@@ -91,7 +91,7 @@ export function BookingClient({
       <CalendarWeekView
         days={days}
         userContext={userContext}
-        onBook={handleBook}
+        bookAction={handleBook}
         isBooking={isBooking}
       />
     </div>

@@ -50,7 +50,7 @@ export const createCouponSchema = z.object({
     .int()
     .min(1, { message: "Sessions must be at least 1" })
     .max(100, { message: "Sessions cannot exceed 100" }),
-  // TODO: handle the deprecation of datetime
+  // DEFERRED: .datetime() is deprecated in Zod v4 — migrate to z.iso.datetime() when upgrading
   expiresAt: z.string().datetime().nullable().optional(),
   maxUses: z
     .number()

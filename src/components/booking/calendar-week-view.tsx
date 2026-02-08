@@ -16,15 +16,14 @@ type CalendarWeekViewProps = {
     weekendAccess: boolean
     hasActiveSubscription: boolean
   } | null
-  // TODO: handle the warning that a function can't be a prop on a use client component. it gotta be a server action, and named accordingly
-  onBook: (scheduledAt: string) => Promise<void>
+  bookAction: (scheduledAt: string) => Promise<void>
   isBooking?: boolean
 }
 
 export function CalendarWeekView({
   days,
   userContext,
-  onBook,
+  bookAction,
   isBooking = false,
 }: CalendarWeekViewProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -81,7 +80,7 @@ export function CalendarWeekView({
 
   const handleBookClick = async () => {
     if (selectedSlot && canBook) {
-      await onBook(selectedSlot)
+      await bookAction(selectedSlot)
       setSelectedSlot(null)
       setSelectedDate(null)
     }

@@ -1,15 +1,8 @@
-// TODO: none of these should be hand rolled, use a proper system
-const HTML_ESCAPE_MAP: Record<string, string> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&#39;",
-}
+import he from "he"
 
 /** Escape HTML special characters to prevent XSS in email templates */
 export function escapeHtml(str: string): string {
-  return str.replace(/[&<>"']/g, (char) => HTML_ESCAPE_MAP[char])
+  return he.encode(str)
 }
 
 /** Strip CRLF characters to prevent email header injection */

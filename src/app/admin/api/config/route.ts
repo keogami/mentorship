@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/admin/auth"
 import { MENTOR_CONFIG } from "@/lib/constants"
+import { checkCsrf } from "@/lib/csrf"
 import { db } from "@/lib/db"
 import { mentorConfig } from "@/lib/db/schema"
 import { updateConfigSchema, validateBody } from "@/lib/validation"
@@ -24,6 +25,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  const csrfError = checkCsrf(request)
+  if (csrfError) return csrfError
+
   const adminCheck = await requireAdmin()
   if (!adminCheck.authorized) return adminCheck.response
 

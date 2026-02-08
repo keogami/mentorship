@@ -9,9 +9,9 @@ import { toZonedTime } from "date-fns-tz"
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm"
 import { MENTOR_CONFIG } from "@/lib/constants"
 import { db } from "@/lib/db"
+import { getMentorConfig } from "@/lib/db/queries"
 import {
   mentorBlocks,
-  mentorConfig,
   plans,
   sessions,
   subscriptionCredits,
@@ -62,12 +62,8 @@ export type SubscriptionWithPlan = {
   bonusDays: number
 }
 
-// TODO: move this to utils
-export async function getMentorConfig() {
-  const [config] = await db.select().from(mentorConfig).limit(1)
-
-  return config || MENTOR_CONFIG
-}
+// Re-export for backward compatibility with existing importers
+export { getMentorConfig }
 
 export async function getUserSubscriptionWithPlan(
   userId: string
@@ -223,7 +219,7 @@ export async function getUserBookingContext(
 
 export function determineDebitSource(
   subscription: SubscriptionWithPlan | null,
-  pack: Pack | null,
+  _pack: Pack | null,
   scheduledAt: Date
 ): "subscription" | "pack" {
   if (subscription) {
@@ -345,7 +341,7 @@ export async function validateBooking(
   // 8. Check weekend access — packs always grant weekend access
   const istDate = toZonedTime(scheduledAt, IST_TIMEZONE)
   const weekendAccessAllowed =
-    (subscription && subscription.plan.weekendAccess) || !!pack
+    subscription?.plan.weekendAccess || !!pack
   if (isWeekend(istDate) && !weekendAccessAllowed) {
     return {
       valid: false,

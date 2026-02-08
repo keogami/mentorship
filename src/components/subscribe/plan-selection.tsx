@@ -96,7 +96,7 @@ export function PlanSelection({
         setSelectedPlanId(null)
       }
     },
-    [plans, razorpayKeyId, scriptLoaded]
+    [plans, razorpayKeyId, userEmail, scriptLoaded]
   )
 
   if (isLoading) {
