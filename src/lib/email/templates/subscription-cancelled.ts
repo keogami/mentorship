@@ -1,13 +1,13 @@
-import { escapeHtml } from "../escape";
+import { escapeHtml } from "../escape"
 
 export type SubscriptionCancelledData = {
-  userName: string;
-  planName: string;
-};
+  userName: string
+  planName: string
+}
 
 export function subscriptionCancelledEmail(data: SubscriptionCancelledData) {
-  const userName = escapeHtml(data.userName);
-  const planName = escapeHtml(data.planName);
+  const userName = escapeHtml(data.userName)
+  const planName = escapeHtml(data.planName)
 
   return {
     subject: `Your ${data.planName} subscription has been cancelled`,
@@ -41,5 +41,5 @@ export function subscriptionCancelledEmail(data: SubscriptionCancelledData) {
 </body>
 </html>
     `.trim(),
-  };
+  }
 }

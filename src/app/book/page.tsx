@@ -1,9 +1,7 @@
-import Link from "next/link";
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { Button } from "@/components/ui/button";
+import { eq } from "drizzle-orm"
+import Link from "next/link"
+import { auth } from "@/auth"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -11,59 +9,61 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
 import {
   generateSlots,
   getUserSubscriptionWithPlan,
   hasPendingSession,
-} from "@/lib/booking";
-import { getActivePack } from "@/lib/packs";
-import { BookingClient } from "./booking-client";
+} from "@/lib/booking"
+import { db } from "@/lib/db"
+import { users } from "@/lib/db/schema"
+import { getActivePack } from "@/lib/packs"
+import { BookingClient } from "./booking-client"
 
 export default async function BookPage() {
-  const session = await auth();
+  const session = await auth()
 
-  let userId: string | null = null;
-  let weekendAccess = false;
-  let userHasPendingSession = false;
-  let sessionsRemaining = 0;
-  let hasActiveSubscription = false;
+  let userId: string | null = null
+  let weekendAccess = false
+  let userHasPendingSession = false
+  let sessionsRemaining = 0
+  let hasActiveSubscription = false
 
   if (session?.user?.email) {
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.email, session.user.email));
+      .where(eq(users.email, session.user.email))
 
     if (user) {
-      userId = user.id;
+      userId = user.id
 
       const [subscription, activePack] = await Promise.all([
         getUserSubscriptionWithPlan(user.id),
         getActivePack(user.id),
-      ]);
+      ])
 
       if (subscription && subscription.status === "active") {
-        hasActiveSubscription = true;
-        weekendAccess = subscription.plan.weekendAccess;
+        hasActiveSubscription = true
+        weekendAccess = subscription.plan.weekendAccess
         sessionsRemaining =
           subscription.plan.sessionsPerPeriod -
-          subscription.sessionsUsedThisPeriod;
+          subscription.sessionsUsedThisPeriod
       }
 
       if (activePack) {
-        hasActiveSubscription = true;
-        weekendAccess = true;
-        sessionsRemaining += activePack.sessionsRemaining;
+        hasActiveSubscription = true
+        weekendAccess = true
+        sessionsRemaining += activePack.sessionsRemaining
       }
 
       if (hasActiveSubscription) {
-        userHasPendingSession = await hasPendingSession(user.id);
+        userHasPendingSession = await hasPendingSession(user.id)
       }
     }
   }
 
-  const days = await generateSlots(userId, weekendAccess, userHasPendingSession);
+  const days = await generateSlots(userId, weekendAccess, userHasPendingSession)
 
   const userContext = userId
     ? {
@@ -72,7 +72,7 @@ export default async function BookPage() {
         weekendAccess,
         hasActiveSubscription,
       }
-    : null;
+    : null
 
   return (
     <div className="container mx-auto px-4 py-16">
@@ -99,7 +99,8 @@ export default async function BookPage() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Browse available time slots below. Sign in with an active subscription to book.
+                Browse available time slots below. Sign in with an active
+                subscription to book.
               </p>
             </CardContent>
             <CardFooter>
@@ -120,7 +121,8 @@ export default async function BookPage() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Choose a plan that fits your schedule or redeem a coupon to start booking mentorship sessions.
+                Choose a plan that fits your schedule or redeem a coupon to
+                start booking mentorship sessions.
               </p>
             </CardContent>
             <CardFooter className="flex gap-2">
@@ -143,7 +145,8 @@ export default async function BookPage() {
             </CardHeader>
             <CardContent>
               <p className="text-amber-700 dark:text-amber-400">
-                You already have a scheduled session. Complete or cancel it before booking another.
+                You already have a scheduled session. Complete or cancel it
+                before booking another.
               </p>
             </CardContent>
             <CardFooter>
@@ -163,7 +166,8 @@ export default async function BookPage() {
             </CardHeader>
             <CardContent>
               <p className="text-amber-700 dark:text-amber-400">
-                You&apos;ve used all your sessions for this billing period. Your sessions will reset at the start of your next billing cycle.
+                You&apos;ve used all your sessions for this billing period. Your
+                sessions will reset at the start of your next billing cycle.
               </p>
             </CardContent>
           </Card>
@@ -184,17 +188,22 @@ export default async function BookPage() {
               <strong>Session Duration:</strong> 50 minutes
             </p>
             <p>
-              <strong>Booking Window:</strong> You can book sessions 1-7 days in advance
+              <strong>Booking Window:</strong> You can book sessions 1-7 days in
+              advance
             </p>
             <p>
-              <strong>Cancellation Policy:</strong> Cancel at least 4 hours before your session to receive a credit back. Late cancellations will not be credited.
+              <strong>Cancellation Policy:</strong> Cancel at least 4 hours
+              before your session to receive a credit back. Late cancellations
+              will not be credited.
             </p>
             <p>
-              <strong>One at a Time:</strong> You can only have one scheduled session at a time. Complete or cancel your current session to book another.
+              <strong>One at a Time:</strong> You can only have one scheduled
+              session at a time. Complete or cancel your current session to book
+              another.
             </p>
           </CardContent>
         </Card>
       </div>
     </div>
-  );
+  )
 }

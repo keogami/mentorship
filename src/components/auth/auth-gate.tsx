@@ -1,6 +1,6 @@
+import type { ReactNode } from "react"
 import { auth } from "@/auth"
 import { SignInOptions } from "./sign-in-options"
-import type { ReactNode } from "react"
 
 interface AuthGateProps {
   children: ReactNode

@@ -1,23 +1,23 @@
-import { escapeHtml } from "../escape";
+import { escapeHtml } from "../escape"
 
 export type MentorCancelledUserData = {
-  userName: string;
-  reason: string;
-  refundAmount: number;
-};
+  userName: string
+  reason: string
+  refundAmount: number
+}
 
 function formatPrice(priceInr: number): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
-  }).format(priceInr);
+  }).format(priceInr)
 }
 
 export function mentorCancelledUserEmail(data: MentorCancelledUserData) {
-  const hasRefund = data.refundAmount > 0;
-  const userName = escapeHtml(data.userName);
-  const reason = escapeHtml(data.reason);
+  const hasRefund = data.refundAmount > 0
+  const userName = escapeHtml(data.userName)
+  const reason = escapeHtml(data.reason)
 
   return {
     subject: "Your Mentorship subscription has been terminated",
@@ -58,5 +58,5 @@ export function mentorCancelledUserEmail(data: MentorCancelledUserData) {
 </body>
 </html>
     `.trim(),
-  };
+  }
 }

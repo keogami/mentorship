@@ -13,6 +13,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
     }),
   ],
+  // TODO: this should be a specific sign-in page
   pages: {
     signIn: "/subscribe",
   },

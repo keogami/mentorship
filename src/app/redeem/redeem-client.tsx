@@ -1,9 +1,8 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import Link from "next/link"
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -11,60 +10,61 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 
 function formatDate(date: string): string {
   return new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
-  }).format(new Date(date));
+  }).format(new Date(date))
 }
 
 type RedeemResult = {
   pack: {
-    sessionsTotal: number;
-    sessionsRemaining: number;
-    expiresAt: string;
-  };
-  sessionsAdded: number;
-};
+    sessionsTotal: number
+    sessionsRemaining: number
+    expiresAt: string
+  }
+  sessionsAdded: number
+}
 
 export function RedeemClient({ initialCode }: { initialCode?: string }) {
-  const [code, setCode] = useState(initialCode ?? "");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<RedeemResult | null>(null);
+  const [code, setCode] = useState(initialCode ?? "")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [result, setResult] = useState<RedeemResult | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!code.trim()) return;
+    e.preventDefault()
+    if (!code.trim()) return
 
-    setIsSubmitting(true);
-    setError(null);
-    setResult(null);
+    setIsSubmitting(true)
+    setError(null)
+    setResult(null)
 
     try {
       const response = await fetch("/api/redeem", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: code.trim() }),
-      });
+      })
 
-      const data = await response.json();
+      const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || "Failed to redeem coupon");
-        return;
+        setError(data.error || "Failed to redeem coupon")
+        return
       }
 
-      setResult(data);
+      setResult(data)
     } catch {
-      setError("An unexpected error occurred");
+      setError("An unexpected error occurred")
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
   if (result) {
     return (
@@ -72,14 +72,16 @@ export function RedeemClient({ initialCode }: { initialCode?: string }) {
         <CardHeader>
           <CardTitle>Coupon Redeemed</CardTitle>
           <CardDescription>
-            {result.sessionsAdded} session{result.sessionsAdded !== 1 ? "s" : ""} added to your pack
+            {result.sessionsAdded} session
+            {result.sessionsAdded !== 1 ? "s" : ""} added to your pack
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="rounded-lg border p-4 space-y-1">
             <p className="text-sm text-muted-foreground">Session Pack</p>
             <p className="text-2xl font-bold">
-              {result.pack.sessionsRemaining} / {result.pack.sessionsTotal} sessions
+              {result.pack.sessionsRemaining} / {result.pack.sessionsTotal}{" "}
+              sessions
             </p>
             <p className="text-sm text-muted-foreground">
               Valid until {formatDate(result.pack.expiresAt)}
@@ -98,7 +100,7 @@ export function RedeemClient({ initialCode }: { initialCode?: string }) {
           </Button>
         </CardFooter>
       </Card>
-    );
+    )
   }
 
   return (
@@ -131,5 +133,5 @@ export function RedeemClient({ initialCode }: { initialCode?: string }) {
         </CardFooter>
       </form>
     </Card>
-  );
+  )
 }

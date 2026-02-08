@@ -1,20 +1,9 @@
-"use client";
+"use client"
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { format, parseISO } from "date-fns";
-import type { DateRange } from "react-day-picker";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
+import { format, parseISO } from "date-fns"
+import { useRouter } from "next/navigation"
+import { useMemo, useState } from "react"
+import type { DateRange } from "react-day-picker"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,102 +14,113 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 type Block = {
-  id: string;
-  startDate: string;
-  endDate: string;
-  reason: string;
-  usersNotified: boolean;
-  createdAt: string;
-};
+  id: string
+  startDate: string
+  endDate: string
+  reason: string
+  usersNotified: boolean
+  createdAt: string
+}
 
 type BlocksTabProps = {
-  blocks: Block[];
-};
+  blocks: Block[]
+}
 
 export function BlocksTab({ blocks }: BlocksTabProps) {
-  const router = useRouter();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  const [reason, setReason] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const router = useRouter()
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+  const [reason, setReason] = useState("")
+  const [isCreating, setIsCreating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
-  const rangeComplete = dateRange?.from && dateRange?.to;
+  const rangeComplete = dateRange?.from && dateRange?.to
 
   // Build list of already-blocked date ranges for the calendar disabled matcher
   const blockedRanges = useMemo(() => {
-    const ranges: { from: Date; to: Date }[] = [];
+    const ranges: { from: Date; to: Date }[] = []
     for (const block of blocks) {
       ranges.push({
         from: parseISO(block.startDate),
         to: parseISO(block.endDate),
-      });
+      })
     }
-    return ranges;
-  }, [blocks]);
+    return ranges
+  }, [blocks])
 
   async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!dateRange?.from || !dateRange?.to) return;
+    e.preventDefault()
+    if (!dateRange?.from || !dateRange?.to) return
 
-    setIsCreating(true);
-    setError(null);
-    setSuccess(null);
+    setIsCreating(true)
+    setError(null)
+    setSuccess(null)
 
-    const startDate = format(dateRange.from, "yyyy-MM-dd");
-    const endDate = format(dateRange.to, "yyyy-MM-dd");
+    const startDate = format(dateRange.from, "yyyy-MM-dd")
+    const endDate = format(dateRange.to, "yyyy-MM-dd")
 
     try {
       const response = await fetch("/admin/api/blocks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ startDate, endDate, reason }),
-      });
+      })
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to create block");
+        const data = await response.json()
+        throw new Error(data.error || "Failed to create block")
       }
 
-      const data = await response.json();
+      const data = await response.json()
       setSuccess(
         `Block created. ${data.creditedSubscriptions} subscription(s) credited with ${data.daysPerSubscription} day(s).`
-      );
-      setDateRange(undefined);
-      setReason("");
-      router.refresh();
+      )
+      setDateRange(undefined)
+      setReason("")
+      router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
-      setIsCreating(false);
+      setIsCreating(false)
     }
   }
 
   async function handleDelete(blockId: string) {
-    setIsDeleting(blockId);
-    setError(null);
-    setSuccess(null);
+    setIsDeleting(blockId)
+    setError(null)
+    setSuccess(null)
 
     try {
       const response = await fetch(`/admin/api/blocks/${blockId}`, {
         method: "DELETE",
-      });
+      })
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to delete block");
+        const data = await response.json()
+        throw new Error(data.error || "Failed to delete block")
       }
 
-      setSuccess("Block deleted and credits revoked.");
-      router.refresh();
+      setSuccess("Block deleted and credits revoked.")
+      router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
-      setIsDeleting(null);
+      setIsDeleting(null)
     }
   }
 
@@ -175,7 +175,10 @@ export function BlocksTab({ blocks }: BlocksTabProps) {
                 required
               />
             </div>
-            <Button type="submit" disabled={isCreating || !rangeComplete || !reason.trim()}>
+            <Button
+              type="submit"
+              disabled={isCreating || !rangeComplete || !reason.trim()}
+            >
               {isCreating ? "Creating..." : "Create Block"}
             </Button>
           </form>
@@ -212,9 +215,9 @@ export function BlocksTab({ blocks }: BlocksTabProps) {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete this block?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will delete the block and revoke bonus day credits
-                          that were issued for it. Sessions already booked will
-                          not be affected.
+                          This will delete the block and revoke bonus day
+                          credits that were issued for it. Sessions already
+                          booked will not be affected.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -235,5 +238,5 @@ export function BlocksTab({ blocks }: BlocksTabProps) {
         )}
       </div>
     </div>
-  );
+  )
 }

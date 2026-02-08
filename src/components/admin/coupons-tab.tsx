@@ -1,35 +1,7 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useRouter } from "next/navigation"
+import { useState } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,37 +12,65 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 type Coupon = {
-  id: string;
-  code: string;
-  sessionsGranted: number;
-  expiresAt: string | null;
-  maxUses: number | null;
-  uses: number;
-  active: boolean;
-  createdAt: string;
-};
+  id: string
+  code: string
+  sessionsGranted: number
+  expiresAt: string | null
+  maxUses: number | null
+  uses: number
+  active: boolean
+  createdAt: string
+}
 
 type RedemptionRecord = {
-  id: string;
-  redeemedAt: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-};
+  id: string
+  redeemedAt: string
+  userId: string
+  userName: string
+  userEmail: string
+}
 
 type CouponsTabProps = {
-  coupons: Coupon[];
-};
+  coupons: Coupon[]
+}
 
 function formatDate(dateStr: string): string {
   return new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
-  }).format(new Date(dateStr));
+  }).format(new Date(dateStr))
 }
 
 function formatDateTime(dateStr: string): string {
@@ -80,46 +80,50 @@ function formatDateTime(dateStr: string): string {
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
-  }).format(new Date(dateStr));
+  }).format(new Date(dateStr))
 }
 
 export function CouponsTab({ coupons }: CouponsTabProps) {
-  const router = useRouter();
+  const router = useRouter()
 
   // Create form state
-  const [code, setCode] = useState("");
-  const [sessionsGranted, setSessionsGranted] = useState("");
-  const [maxUses, setMaxUses] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
+  const [code, setCode] = useState("")
+  const [sessionsGranted, setSessionsGranted] = useState("")
+  const [maxUses, setMaxUses] = useState("")
+  const [expiresAt, setExpiresAt] = useState("")
+  const [isCreating, setIsCreating] = useState(false)
 
   // Edit state
-  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
-  const [editCode, setEditCode] = useState("");
-  const [editSessionsGranted, setEditSessionsGranted] = useState("");
-  const [editMaxUses, setEditMaxUses] = useState("");
-  const [editExpiresAt, setEditExpiresAt] = useState("");
-  const [editActive, setEditActive] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null)
+  const [editCode, setEditCode] = useState("")
+  const [editSessionsGranted, setEditSessionsGranted] = useState("")
+  const [editMaxUses, setEditMaxUses] = useState("")
+  const [editExpiresAt, setEditExpiresAt] = useState("")
+  const [editActive, setEditActive] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
 
   // Toggle/delete state
-  const [isToggling, setIsToggling] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isToggling, setIsToggling] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
   // History state
-  const [viewingHistoryCouponId, setViewingHistoryCouponId] = useState<string | null>(null);
-  const [redemptionHistory, setRedemptionHistory] = useState<RedemptionRecord[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [viewingHistoryCouponId, setViewingHistoryCouponId] = useState<
+    string | null
+  >(null)
+  const [redemptionHistory, setRedemptionHistory] = useState<
+    RedemptionRecord[]
+  >([])
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
 
   // Messages
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    setIsCreating(true);
-    setError(null);
-    setSuccess(null);
+    e.preventDefault()
+    setIsCreating(true)
+    setError(null)
+    setSuccess(null)
 
     try {
       const response = await fetch("/admin/api/coupons", {
@@ -131,41 +135,43 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
           maxUses: maxUses ? parseInt(maxUses, 10) : undefined,
           expiresAt: expiresAt || undefined,
         }),
-      });
+      })
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to create coupon");
+        const data = await response.json()
+        throw new Error(data.error || "Failed to create coupon")
       }
 
-      setSuccess(`Coupon "${code.toUpperCase()}" created (inactive by default).`);
-      setCode("");
-      setSessionsGranted("");
-      setMaxUses("");
-      setExpiresAt("");
-      router.refresh();
+      setSuccess(
+        `Coupon "${code.toUpperCase()}" created (inactive by default).`
+      )
+      setCode("")
+      setSessionsGranted("")
+      setMaxUses("")
+      setExpiresAt("")
+      router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
-      setIsCreating(false);
+      setIsCreating(false)
     }
   }
 
   function openEditDialog(coupon: Coupon) {
-    setEditingCoupon(coupon);
-    setEditCode(coupon.code);
-    setEditSessionsGranted(coupon.sessionsGranted.toString());
-    setEditMaxUses(coupon.maxUses?.toString() ?? "");
-    setEditExpiresAt(coupon.expiresAt ? coupon.expiresAt.split("T")[0] : "");
-    setEditActive(coupon.active);
+    setEditingCoupon(coupon)
+    setEditCode(coupon.code)
+    setEditSessionsGranted(coupon.sessionsGranted.toString())
+    setEditMaxUses(coupon.maxUses?.toString() ?? "")
+    setEditExpiresAt(coupon.expiresAt ? coupon.expiresAt.split("T")[0] : "")
+    setEditActive(coupon.active)
   }
 
   async function handleEdit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!editingCoupon) return;
+    e.preventDefault()
+    if (!editingCoupon) return
 
-    setIsEditing(true);
-    setError(null);
+    setIsEditing(true)
+    setError(null)
 
     try {
       const response = await fetch(`/admin/api/coupons/${editingCoupon.id}`, {
@@ -178,87 +184,87 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
           expiresAt: editExpiresAt || null,
           active: editActive,
         }),
-      });
+      })
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to update coupon");
+        const data = await response.json()
+        throw new Error(data.error || "Failed to update coupon")
       }
 
-      setSuccess(`Coupon "${editCode.toUpperCase()}" updated.`);
-      setEditingCoupon(null);
-      router.refresh();
+      setSuccess(`Coupon "${editCode.toUpperCase()}" updated.`)
+      setEditingCoupon(null)
+      router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
-      setIsEditing(false);
+      setIsEditing(false)
     }
   }
 
   async function handleToggleActive(coupon: Coupon) {
-    setIsToggling(coupon.id);
-    setError(null);
+    setIsToggling(coupon.id)
+    setError(null)
 
     try {
       const response = await fetch(`/admin/api/coupons/${coupon.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active: !coupon.active }),
-      });
+      })
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to update coupon");
+        const data = await response.json()
+        throw new Error(data.error || "Failed to update coupon")
       }
 
-      router.refresh();
+      router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
-      setIsToggling(null);
+      setIsToggling(null)
     }
   }
 
   async function handleDelete(couponId: string) {
-    setIsDeleting(couponId);
-    setError(null);
+    setIsDeleting(couponId)
+    setError(null)
 
     try {
       const response = await fetch(`/admin/api/coupons/${couponId}`, {
         method: "DELETE",
-      });
+      })
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to delete coupon");
+        const data = await response.json()
+        throw new Error(data.error || "Failed to delete coupon")
       }
 
-      setSuccess("Coupon deleted.");
-      router.refresh();
+      setSuccess("Coupon deleted.")
+      router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
-      setIsDeleting(null);
+      setIsDeleting(null)
     }
   }
 
   async function handleViewHistory(couponId: string) {
-    setViewingHistoryCouponId(couponId);
-    setIsLoadingHistory(true);
-    setRedemptionHistory([]);
+    setViewingHistoryCouponId(couponId)
+    setIsLoadingHistory(true)
+    setRedemptionHistory([])
 
     try {
-      const response = await fetch(`/admin/api/coupons/${couponId}`);
+      const response = await fetch(`/admin/api/coupons/${couponId}`)
       if (response.ok) {
-        const data = await response.json();
-        setRedemptionHistory(data.redemptions);
+        const data = await response.json()
+        setRedemptionHistory(data.redemptions)
       }
     } finally {
-      setIsLoadingHistory(false);
+      setIsLoadingHistory(false)
     }
   }
 
-  const viewingCoupon = coupons.find((c) => c.id === viewingHistoryCouponId);
+  const viewingCoupon = coupons.find((c) => c.id === viewingHistoryCouponId)
 
   return (
     <div className="space-y-6">
@@ -278,7 +284,8 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
         <CardHeader>
           <CardTitle>Create Coupon</CardTitle>
           <CardDescription>
-            Generate a coupon code that grants free sessions. New coupons are inactive by default.
+            Generate a coupon code that grants free sessions. New coupons are
+            inactive by default.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -359,10 +366,9 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
               <TableBody>
                 {coupons.map((coupon) => {
                   const isExpired =
-                    coupon.expiresAt &&
-                    new Date(coupon.expiresAt) < new Date();
+                    coupon.expiresAt && new Date(coupon.expiresAt) < new Date()
                   const isMaxedOut =
-                    coupon.maxUses !== null && coupon.uses >= coupon.maxUses;
+                    coupon.maxUses !== null && coupon.uses >= coupon.maxUses
 
                   return (
                     <TableRow key={coupon.id}>
@@ -402,8 +408,8 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
                             {isToggling === coupon.id
                               ? "..."
                               : coupon.active
-                              ? "Deactivate"
-                              : "Activate"}
+                                ? "Deactivate"
+                                : "Activate"}
                           </Button>
                           <Button
                             variant="ghost"
@@ -431,10 +437,13 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Coupon</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  Delete Coupon
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete coupon &quot;{coupon.code}&quot;?
-                                  This action cannot be undone.
+                                  Are you sure you want to delete coupon &quot;
+                                  {coupon.code}&quot;? This action cannot be
+                                  undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -444,7 +453,9 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
                                   disabled={isDeleting === coupon.id}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
-                                  {isDeleting === coupon.id ? "Deleting..." : "Delete"}
+                                  {isDeleting === coupon.id
+                                    ? "Deleting..."
+                                    : "Delete"}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -452,7 +463,7 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
                         </div>
                       </TableCell>
                     </TableRow>
-                  );
+                  )
                 })}
               </TableBody>
             </Table>
@@ -461,7 +472,10 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
       </div>
 
       {/* Edit Dialog */}
-      <Dialog open={!!editingCoupon} onOpenChange={(open) => !open && setEditingCoupon(null)}>
+      <Dialog
+        open={!!editingCoupon}
+        onOpenChange={(open) => !open && setEditingCoupon(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Coupon</DialogTitle>
@@ -492,7 +506,9 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="editMaxUses">Max Uses (leave empty for unlimited)</Label>
+              <Label htmlFor="editMaxUses">
+                Max Uses (leave empty for unlimited)
+              </Label>
               <Input
                 id="editMaxUses"
                 type="number"
@@ -545,7 +561,10 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
             <DialogTitle>Redemption History</DialogTitle>
             <DialogDescription>
               {viewingCoupon && (
-                <>Users who have redeemed coupon &quot;{viewingCoupon.code}&quot;</>
+                <>
+                  Users who have redeemed coupon &quot;{viewingCoupon.code}
+                  &quot;
+                </>
               )}
             </DialogDescription>
           </DialogHeader>
@@ -580,5 +599,5 @@ export function CouponsTab({ coupons }: CouponsTabProps) {
         </DialogContent>
       </Dialog>
     </div>
-  );
+  )
 }

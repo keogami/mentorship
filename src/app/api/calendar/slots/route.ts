@@ -1,61 +1,61 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq } from "drizzle-orm"
+import { NextResponse } from "next/server"
+import { auth } from "@/auth"
 import {
   generateSlots,
   getUserSubscriptionWithPlan,
   hasPendingSession,
-} from "@/lib/booking";
-import { getActivePack } from "@/lib/packs";
+} from "@/lib/booking"
+import { db } from "@/lib/db"
+import { users } from "@/lib/db/schema"
+import { getActivePack } from "@/lib/packs"
 
 export async function GET() {
-  const session = await auth();
+  const session = await auth()
 
-  let userId: string | null = null;
-  let weekendAccess = false;
-  let userHasPendingSession = false;
-  let sessionsRemaining = 0;
-  let hasSessionSource = false;
-  let hasActivePack = false;
+  let userId: string | null = null
+  let weekendAccess = false
+  let userHasPendingSession = false
+  let sessionsRemaining = 0
+  let hasSessionSource = false
+  let hasActivePack = false
 
   if (session?.user?.email) {
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.email, session.user.email));
+      .where(eq(users.email, session.user.email))
 
     if (user) {
-      userId = user.id;
+      userId = user.id
 
       const [subscription, activePack] = await Promise.all([
         getUserSubscriptionWithPlan(user.id),
         getActivePack(user.id),
-      ]);
+      ])
 
       if (subscription && subscription.status === "active") {
-        hasSessionSource = true;
-        weekendAccess = subscription.plan.weekendAccess;
+        hasSessionSource = true
+        weekendAccess = subscription.plan.weekendAccess
         sessionsRemaining =
           subscription.plan.sessionsPerPeriod -
-          subscription.sessionsUsedThisPeriod;
+          subscription.sessionsUsedThisPeriod
       }
 
       if (activePack) {
-        hasSessionSource = true;
-        hasActivePack = true;
-        weekendAccess = true;
-        sessionsRemaining += activePack.sessionsRemaining;
+        hasSessionSource = true
+        hasActivePack = true
+        weekendAccess = true
+        sessionsRemaining += activePack.sessionsRemaining
       }
 
       if (hasSessionSource) {
-        userHasPendingSession = await hasPendingSession(user.id);
+        userHasPendingSession = await hasPendingSession(user.id)
       }
     }
   }
 
-  const days = await generateSlots(userId, weekendAccess, userHasPendingSession);
+  const days = await generateSlots(userId, weekendAccess, userHasPendingSession)
 
   return NextResponse.json({
     days,
@@ -68,5 +68,5 @@ export async function GET() {
           hasActivePack,
         }
       : null,
-  });
+  })
 }

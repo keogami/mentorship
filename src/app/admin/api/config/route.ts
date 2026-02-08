@@ -1,16 +1,16 @@
-import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
-import { db } from "@/lib/db";
-import { mentorConfig } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { MENTOR_CONFIG } from "@/lib/constants";
-import { validateBody, updateConfigSchema } from "@/lib/validation";
+import { eq } from "drizzle-orm"
+import { NextResponse } from "next/server"
+import { requireAdmin } from "@/lib/admin/auth"
+import { MENTOR_CONFIG } from "@/lib/constants"
+import { db } from "@/lib/db"
+import { mentorConfig } from "@/lib/db/schema"
+import { updateConfigSchema, validateBody } from "@/lib/validation"
 
 export async function GET() {
-  const adminCheck = await requireAdmin();
-  if (!adminCheck.authorized) return adminCheck.response;
+  const adminCheck = await requireAdmin()
+  if (!adminCheck.authorized) return adminCheck.response
 
-  const [config] = await db.select().from(mentorConfig).limit(1);
+  const [config] = await db.select().from(mentorConfig).limit(1)
 
   return NextResponse.json({
     config: config || {
@@ -20,28 +20,28 @@ export async function GET() {
       cancellationNoticeHours: MENTOR_CONFIG.cancellationNoticeHours,
       updatedAt: null,
     },
-  });
+  })
 }
 
 export async function PATCH(request: Request) {
-  const adminCheck = await requireAdmin();
-  if (!adminCheck.authorized) return adminCheck.response;
+  const adminCheck = await requireAdmin()
+  if (!adminCheck.authorized) return adminCheck.response
 
-  const body = await request.json();
-  const parsed = validateBody(updateConfigSchema, body);
-  if (!parsed.success) return parsed.response;
-  const updates = parsed.data;
+  const body = await request.json()
+  const parsed = validateBody(updateConfigSchema, body)
+  if (!parsed.success) return parsed.response
+  const updates = parsed.data
 
   // Upsert the singleton row
-  const [existing] = await db.select().from(mentorConfig).limit(1);
+  const [existing] = await db.select().from(mentorConfig).limit(1)
 
   if (existing) {
     const [updated] = await db
       .update(mentorConfig)
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(mentorConfig.id, "singleton"))
-      .returning();
-    return NextResponse.json({ config: updated });
+      .returning()
+    return NextResponse.json({ config: updated })
   } else {
     const [created] = await db
       .insert(mentorConfig)
@@ -56,7 +56,7 @@ export async function PATCH(request: Request) {
           MENTOR_CONFIG.cancellationNoticeHours,
         updatedAt: new Date(),
       })
-      .returning();
-    return NextResponse.json({ config: created });
+      .returning()
+    return NextResponse.json({ config: created })
   }
 }

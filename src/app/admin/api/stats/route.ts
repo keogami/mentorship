@@ -1,20 +1,20 @@
-import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
-import { db } from "@/lib/db";
-import { sessions, subscriptions, users, mentorBlocks } from "@/lib/db/schema";
-import { eq, and, gte, lte, sql } from "drizzle-orm";
-import { startOfDay, endOfDay, startOfWeek, endOfWeek } from "date-fns";
+import { endOfDay, endOfWeek, startOfDay, startOfWeek } from "date-fns"
+import { and, eq, gte, lte, sql } from "drizzle-orm"
+import { NextResponse } from "next/server"
+import { requireAdmin } from "@/lib/admin/auth"
+import { db } from "@/lib/db"
+import { mentorBlocks, sessions, subscriptions, users } from "@/lib/db/schema"
 
 export async function GET() {
-  const adminCheck = await requireAdmin();
-  if (!adminCheck.authorized) return adminCheck.response;
+  const adminCheck = await requireAdmin()
+  if (!adminCheck.authorized) return adminCheck.response
 
-  const now = new Date();
-  const todayStart = startOfDay(now);
-  const todayEnd = endOfDay(now);
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
-  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-  const todayStr = now.toISOString().split("T")[0];
+  const now = new Date()
+  const todayStart = startOfDay(now)
+  const todayEnd = endOfDay(now)
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 }) // Monday
+  const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
+  const todayStr = now.toISOString().split("T")[0]
 
   const [
     todaySessions,
@@ -62,14 +62,16 @@ export async function GET() {
       ),
 
     // Total sessions all time
-    db.select({ count: sql<number>`count(*)::int` }).from(sessions),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(sessions),
 
     // Active blocks (end date >= today)
     db
       .select()
       .from(mentorBlocks)
       .where(gte(mentorBlocks.endDate, todayStr)),
-  ]);
+  ])
 
   return NextResponse.json({
     todaySessions: todaySessions.map((s) => ({
@@ -87,5 +89,5 @@ export async function GET() {
       totalSessionsAllTime: allTimeSessionResult?.count ?? 0,
     },
     activeBlocks,
-  });
+  })
 }

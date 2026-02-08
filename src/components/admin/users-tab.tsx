@@ -1,19 +1,7 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useRouter } from "next/navigation"
+import { useState } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,41 +12,53 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 type UserSubscription = {
-  id: string;
-  status: string;
-  planName: string;
-  planSlug: string;
-  priceInr: number;
-  period: string;
-  sessionsUsed: number;
-  sessionsTotal: number;
-  currentPeriodEnd: string;
-  cancelledAt: string | null;
-};
+  id: string
+  status: string
+  planName: string
+  planSlug: string
+  priceInr: number
+  period: string
+  sessionsUsed: number
+  sessionsTotal: number
+  currentPeriodEnd: string
+  cancelledAt: string | null
+}
 
 type AdminUser = {
-  id: string;
-  name: string;
-  email: string;
-  blocked: boolean;
-  createdAt: string;
-  contact: string | null;
-  subscription: UserSubscription;
-};
+  id: string
+  name: string
+  email: string
+  blocked: boolean
+  createdAt: string
+  contact: string | null
+  subscription: UserSubscription
+}
 
 type UsersTabProps = {
-  users: AdminUser[];
-};
+  users: AdminUser[]
+}
 
 function formatDate(dateStr: string): string {
   return new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
-  }).format(new Date(dateStr));
+  }).format(new Date(dateStr))
 }
 
 function formatPrice(priceInr: number): string {
@@ -66,7 +66,7 @@ function formatPrice(priceInr: number): string {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
-  }).format(priceInr);
+  }).format(priceInr)
 }
 
 function statusVariant(
@@ -74,60 +74,60 @@ function statusVariant(
 ): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
     case "active":
-      return "default";
+      return "default"
     case "cancelled":
-      return "destructive";
+      return "destructive"
     case "past_due":
-      return "outline";
+      return "outline"
     default:
-      return "secondary";
+      return "secondary"
   }
 }
 
 export function UsersTab({ users }: UsersTabProps) {
-  const router = useRouter();
-  const [cancellingUserId, setCancellingUserId] = useState<string | null>(null);
-  const [cancelReason, setCancelReason] = useState("");
-  const [blockUser, setBlockUser] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const router = useRouter()
+  const [cancellingUserId, setCancellingUserId] = useState<string | null>(null)
+  const [cancelReason, setCancelReason] = useState("")
+  const [blockUser, setBlockUser] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   async function handleCancel(userId: string) {
-    setCancellingUserId(userId);
-    setError(null);
-    setSuccess(null);
+    setCancellingUserId(userId)
+    setError(null)
+    setSuccess(null)
 
     try {
       const response = await fetch(`/admin/api/users/${userId}/cancel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: cancelReason, blockUser }),
-      });
+      })
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to cancel subscription");
+        const data = await response.json()
+        throw new Error(data.error || "Failed to cancel subscription")
       }
 
-      const data = await response.json();
+      const data = await response.json()
       const parts = [
         `Subscription cancelled.`,
         `Refund: ${formatPrice(data.refundAmountInr)}.`,
-      ];
+      ]
       if (data.sessionsAffected > 0) {
-        parts.push(`${data.sessionsAffected} session(s) cancelled.`);
+        parts.push(`${data.sessionsAffected} session(s) cancelled.`)
       }
       if (data.userBlocked) {
-        parts.push("User blocked from resubscribing.");
+        parts.push("User blocked from resubscribing.")
       }
-      setSuccess(parts.join(" "));
-      setCancelReason("");
-      setBlockUser(false);
-      router.refresh();
+      setSuccess(parts.join(" "))
+      setCancelReason("")
+      setBlockUser(false)
+      router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
-      setCancellingUserId(null);
+      setCancellingUserId(null)
     }
   }
 
@@ -163,15 +163,15 @@ export function UsersTab({ users }: UsersTabProps) {
             </TableHeader>
             <TableBody>
               {users.map((user) => {
-                const sub = user.subscription;
-                const unusedSessions = sub.sessionsTotal - sub.sessionsUsed;
+                const sub = user.subscription
+                const unusedSessions = sub.sessionsTotal - sub.sessionsUsed
                 const costPerSession = Math.floor(
                   sub.priceInr / sub.sessionsTotal
-                );
+                )
                 const refundEstimate = Math.max(
                   0,
                   unusedSessions * costPerSession
-                );
+                )
 
                 return (
                   <TableRow key={user.id}>
@@ -257,8 +257,8 @@ export function UsersTab({ users }: UsersTabProps) {
                             <AlertDialogFooter>
                               <AlertDialogCancel
                                 onClick={() => {
-                                  setCancelReason("");
-                                  setBlockUser(false);
+                                  setCancelReason("")
+                                  setBlockUser(false)
                                 }}
                               >
                                 Keep Active
@@ -280,12 +280,12 @@ export function UsersTab({ users }: UsersTabProps) {
                       )}
                     </TableCell>
                   </TableRow>
-                );
+                )
               })}
             </TableBody>
           </Table>
         </div>
       )}
     </div>
-  );
+  )
 }

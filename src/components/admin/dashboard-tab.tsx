@@ -1,41 +1,36 @@
-"use client";
+"use client"
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 type TodaySession = {
-  id: string;
-  scheduledAt: string;
-  status: string;
-  meetLink: string | null;
-  durationMinutes: number;
-  user: { name: string; email: string };
-};
+  id: string
+  scheduledAt: string
+  status: string
+  meetLink: string | null
+  durationMinutes: number
+  user: { name: string; email: string }
+}
 
 type ActiveBlock = {
-  id: string;
-  startDate: string;
-  endDate: string;
-  reason: string;
-};
+  id: string
+  startDate: string
+  endDate: string
+  reason: string
+}
 
 type Stats = {
-  activeSubscribers: number;
-  sessionsToday: number;
-  sessionsThisWeek: number;
-  totalSessionsAllTime: number;
-};
+  activeSubscribers: number
+  sessionsToday: number
+  sessionsThisWeek: number
+  totalSessionsAllTime: number
+}
 
 type DashboardTabProps = {
-  todaySessions: TodaySession[];
-  stats: Stats;
-  activeBlocks: ActiveBlock[];
-};
+  todaySessions: TodaySession[]
+  stats: Stats
+  activeBlocks: ActiveBlock[]
+}
 
 function formatTime(dateStr: string): string {
   return new Intl.DateTimeFormat("en-IN", {
@@ -43,7 +38,7 @@ function formatTime(dateStr: string): string {
     minute: "2-digit",
     timeZone: "Asia/Kolkata",
     hour12: true,
-  }).format(new Date(dateStr));
+  }).format(new Date(dateStr))
 }
 
 function statusVariant(
@@ -51,14 +46,14 @@ function statusVariant(
 ): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
     case "scheduled":
-      return "default";
+      return "default"
     case "completed":
-      return "secondary";
+      return "secondary"
     case "cancelled_by_user":
     case "cancelled_by_mentor":
-      return "destructive";
+      return "destructive"
     default:
-      return "outline";
+      return "outline"
   }
 }
 
@@ -178,5 +173,5 @@ export function DashboardTab({
         </Card>
       )}
     </div>
-  );
+  )
 }

@@ -1,57 +1,62 @@
-import { db } from "@/lib/db";
-import { sessions, mentorBlocks } from "@/lib/db/schema";
-import { eq, and, gte, lte, inArray } from "drizzle-orm";
 import {
   addDays,
-  startOfDay,
   endOfDay,
+  format,
+  isWeekend,
   setHours,
+  setMilliseconds,
   setMinutes,
   setSeconds,
-  setMilliseconds,
-  isWeekend,
-  format,
-} from "date-fns";
-import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { getMentorConfig } from "./validation";
+  startOfDay,
+} from "date-fns"
+import { fromZonedTime, toZonedTime } from "date-fns-tz"
+import { and, eq, gte, inArray, lte } from "drizzle-orm"
+import { db } from "@/lib/db"
+import { mentorBlocks, sessions } from "@/lib/db/schema"
+import { getMentorConfig } from "./validation"
 
-const IST_TIMEZONE = "Asia/Kolkata";
-const SLOT_HOURS = [14, 15, 16, 17, 18]; // 2PM - 6PM IST
+const IST_TIMEZONE = "Asia/Kolkata"
+const SLOT_HOURS = [14, 15, 16, 17, 18] // 2PM - 6PM IST
 
 export type TimeSlot = {
-  time: string; // ISO string
-  hour: number;
-  available: boolean;
-  reason?: "booked" | "mentor_blocked" | "at_capacity" | "past" | "weekend_restricted";
-};
+  time: string // ISO string
+  hour: number
+  available: boolean
+  reason?:
+    | "booked"
+    | "mentor_blocked"
+    | "at_capacity"
+    | "past"
+    | "weekend_restricted"
+}
 
 export type DaySlots = {
-  date: string; // YYYY-MM-DD
-  dayOfWeek: number; // 0 = Sunday, 6 = Saturday
-  isWeekend: boolean;
-  slots: TimeSlot[];
-  mentorBlocked: boolean;
-  totalBooked: number;
-  mentorCapacity: number;
-};
+  date: string // YYYY-MM-DD
+  dayOfWeek: number // 0 = Sunday, 6 = Saturday
+  isWeekend: boolean
+  slots: TimeSlot[]
+  mentorBlocked: boolean
+  totalBooked: number
+  mentorCapacity: number
+}
 
 export type SlotsResponse = {
-  days: DaySlots[];
+  days: DaySlots[]
   userContext: {
-    sessionsRemaining: number;
-    hasPendingSession: boolean;
-    weekendAccess: boolean;
-    hasActiveSubscription: boolean;
-  } | null;
-};
+    sessionsRemaining: number
+    hasPendingSession: boolean
+    weekendAccess: boolean
+    hasActiveSubscription: boolean
+  } | null
+}
 
 function createTimeSlot(date: Date, hour: number): Date {
   // Create a time in IST, then convert to UTC
   const istDate = setMilliseconds(
     setSeconds(setMinutes(setHours(date, hour), 0), 0),
     0
-  );
-  return fromZonedTime(istDate, IST_TIMEZONE);
+  )
+  return fromZonedTime(istDate, IST_TIMEZONE)
 }
 
 export async function generateSlots(
@@ -59,20 +64,23 @@ export async function generateSlots(
   weekendAccess: boolean,
   hasPendingSession: boolean
 ): Promise<DaySlots[]> {
-  const config = await getMentorConfig();
-  const now = new Date();
-  const days: DaySlots[] = [];
+  const config = await getMentorConfig()
+  const now = new Date()
+  const days: DaySlots[] = []
 
   // Generate slots for next 7 days starting from tomorrow
+  // TODO: make this run in parallel
   for (let i = 1; i <= config.bookingWindowDays; i++) {
-    const dayStart = startOfDay(addDays(now, i));
-    const dayEnd = endOfDay(dayStart);
-    const istDayStart = toZonedTime(dayStart, IST_TIMEZONE);
-    const dateStr = format(istDayStart, "yyyy-MM-dd");
-    const dayOfWeek = istDayStart.getDay();
-    const dayIsWeekend = isWeekend(istDayStart);
+    const dayStart = startOfDay(addDays(now, i))
+    const dayEnd = endOfDay(dayStart)
+    const istDayStart = toZonedTime(dayStart, IST_TIMEZONE)
+    const dateStr = format(istDayStart, "yyyy-MM-dd")
+    const dayOfWeek = istDayStart.getDay()
+    const dayIsWeekend = isWeekend(istDayStart)
 
     // Check if mentor is blocked this day
+    // TODO: make this a prepared statement to avoid unnecessary performance cost
+    // or better yet, do it in a single query.
     const [block] = await db
       .select({ id: mentorBlocks.id })
       .from(mentorBlocks)
@@ -82,11 +90,12 @@ export async function generateSlots(
           gte(mentorBlocks.endDate, dateStr)
         )
       )
-      .limit(1);
+      .limit(1)
 
-    const mentorBlocked = !!block;
+    const mentorBlocked = !!block
 
     // Get all booked sessions for this day
+    // TODO: same as above
     const bookedSessions = await db
       .select({
         scheduledAt: sessions.scheduledAt,
@@ -98,17 +107,18 @@ export async function generateSlots(
           lte(sessions.scheduledAt, dayEnd),
           eq(sessions.status, "scheduled")
         )
-      );
+      )
 
     const bookedTimes = new Set(
       bookedSessions.map((s) => {
-        const istTime = toZonedTime(s.scheduledAt, IST_TIMEZONE);
-        return istTime.getHours();
+        const istTime = toZonedTime(s.scheduledAt, IST_TIMEZONE)
+        return istTime.getHours()
       })
-    );
+    )
 
     // Check if user already booked this day
-    let userBookedThisDay = false;
+    // TODO: same as above
+    let userBookedThisDay = false
     if (userId) {
       const [userSession] = await db
         .select({ id: sessions.id })
@@ -121,39 +131,39 @@ export async function generateSlots(
             inArray(sessions.status, ["scheduled", "completed"])
           )
         )
-        .limit(1);
-      userBookedThisDay = !!userSession;
+        .limit(1)
+      userBookedThisDay = !!userSession
     }
 
-    const totalBooked = bookedSessions.length;
-    const atCapacity = totalBooked >= config.maxSessionsPerDay;
+    const totalBooked = bookedSessions.length
+    const atCapacity = totalBooked >= config.maxSessionsPerDay
 
     // Generate time slots
     const slots: TimeSlot[] = SLOT_HOURS.map((hour) => {
-      const slotTime = createTimeSlot(istDayStart, hour);
-      const isPast = slotTime <= now;
+      const slotTime = createTimeSlot(istDayStart, hour)
+      const isPast = slotTime <= now
 
-      let available = true;
-      let reason: TimeSlot["reason"];
+      let available = true
+      let reason: TimeSlot["reason"]
 
       if (isPast) {
-        available = false;
-        reason = "past";
+        available = false
+        reason = "past"
       } else if (mentorBlocked) {
-        available = false;
-        reason = "mentor_blocked";
+        available = false
+        reason = "mentor_blocked"
       } else if (dayIsWeekend && !weekendAccess) {
-        available = false;
-        reason = "weekend_restricted";
+        available = false
+        reason = "weekend_restricted"
       } else if (bookedTimes.has(hour)) {
-        available = false;
-        reason = "booked";
+        available = false
+        reason = "booked"
       } else if (atCapacity) {
-        available = false;
-        reason = "at_capacity";
+        available = false
+        reason = "at_capacity"
       } else if (userBookedThisDay || hasPendingSession) {
-        available = false;
-        reason = "booked"; // Simplified - user can't book more
+        available = false
+        reason = "booked" // Simplified - user can't book more
       }
 
       return {
@@ -161,8 +171,8 @@ export async function generateSlots(
         hour,
         available,
         reason: available ? undefined : reason,
-      };
-    });
+      }
+    })
 
     days.push({
       date: dateStr,
@@ -172,21 +182,21 @@ export async function generateSlots(
       mentorBlocked,
       totalBooked,
       mentorCapacity: config.maxSessionsPerDay,
-    });
+    })
   }
 
-  return days;
+  return days
 }
 
 export async function getSlotAvailability(
   date: Date
 ): Promise<{ hour: number; available: boolean }[]> {
-  const config = await getMentorConfig();
-  const now = new Date();
-  const dayStart = startOfDay(date);
-  const dayEnd = endOfDay(date);
-  const istDate = toZonedTime(date, IST_TIMEZONE);
-  const dateStr = format(istDate, "yyyy-MM-dd");
+  const config = await getMentorConfig()
+  const now = new Date()
+  const dayStart = startOfDay(date)
+  const dayEnd = endOfDay(date)
+  const istDate = toZonedTime(date, IST_TIMEZONE)
+  const dateStr = format(istDate, "yyyy-MM-dd")
 
   // Check mentor block
   const [block] = await db
@@ -198,10 +208,10 @@ export async function getSlotAvailability(
         gte(mentorBlocks.endDate, dateStr)
       )
     )
-    .limit(1);
+    .limit(1)
 
   if (block) {
-    return SLOT_HOURS.map((hour) => ({ hour, available: false }));
+    return SLOT_HOURS.map((hour) => ({ hour, available: false }))
   }
 
   // Get booked sessions
@@ -216,25 +226,25 @@ export async function getSlotAvailability(
         lte(sessions.scheduledAt, dayEnd),
         eq(sessions.status, "scheduled")
       )
-    );
+    )
 
   const bookedTimes = new Set(
     bookedSessions.map((s) => {
-      const istTime = toZonedTime(s.scheduledAt, IST_TIMEZONE);
-      return istTime.getHours();
+      const istTime = toZonedTime(s.scheduledAt, IST_TIMEZONE)
+      return istTime.getHours()
     })
-  );
+  )
 
-  const totalBooked = bookedSessions.length;
-  const atCapacity = totalBooked >= config.maxSessionsPerDay;
+  const totalBooked = bookedSessions.length
+  const atCapacity = totalBooked >= config.maxSessionsPerDay
 
   return SLOT_HOURS.map((hour) => {
-    const slotTime = createTimeSlot(istDate, hour);
-    const isPast = slotTime <= now;
+    const slotTime = createTimeSlot(istDate, hour)
+    const isPast = slotTime <= now
 
     return {
       hour,
       available: !isPast && !bookedTimes.has(hour) && !atCapacity,
-    };
-  });
+    }
+  })
 }

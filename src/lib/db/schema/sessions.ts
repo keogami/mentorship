@@ -1,7 +1,14 @@
-import { pgEnum, pgTable, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
-import { users } from "./users";
-import { subscriptions } from "./subscriptions";
-import { packs } from "./coupons";
+import {
+  boolean,
+  integer,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core"
+import { packs } from "./coupons"
+import { subscriptions } from "./subscriptions"
+import { users } from "./users"
 
 export const sessionStatusEnum = pgEnum("session_status", [
   "scheduled",
@@ -9,10 +16,12 @@ export const sessionStatusEnum = pgEnum("session_status", [
   "cancelled_by_user",
   "cancelled_by_mentor",
   "no_show",
-]);
+])
 
 export const sessions = pgTable("sessions", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   userId: text("user_id")
     .notNull()
     .references(() => users.id),
@@ -26,4 +35,4 @@ export const sessions = pgTable("sessions", {
   cancelledAt: timestamp("cancelled_at"),
   lateCancel: boolean("late_cancel").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+})

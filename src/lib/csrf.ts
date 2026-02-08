@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server"
 
 /**
  * Lightweight CSRF protection via Origin header check.
@@ -7,40 +7,37 @@ import { NextResponse } from "next/server";
  * Only checks POST/PUT/PATCH/DELETE requests with an Origin header.
  * Requests without an Origin header are allowed (direct API calls, curl, etc.)
  */
+
+// TODO: actually use CSRF protection
+
 export function checkCsrf(request: Request): NextResponse | null {
-  const method = request.method.toUpperCase();
+  const method = request.method.toUpperCase()
   if (method === "GET" || method === "HEAD" || method === "OPTIONS") {
-    return null;
+    return null
   }
 
-  const origin = request.headers.get("origin");
+  const origin = request.headers.get("origin")
   if (!origin) {
     // No Origin header — likely a server-to-server call or curl.
     // SameSite cookies still protect against cross-site browser requests.
-    return null;
+    return null
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
   if (!siteUrl) {
-    return null;
+    return null
   }
 
   try {
-    const originHost = new URL(origin).host;
-    const siteHost = new URL(siteUrl).host;
+    const originHost = new URL(origin).host
+    const siteHost = new URL(siteUrl).host
 
     if (originHost !== siteHost) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
   } catch {
-    return NextResponse.json(
-      { error: "Forbidden" },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  return null;
+  return null
 }

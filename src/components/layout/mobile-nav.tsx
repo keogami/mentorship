@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
-import { useSession, signOut } from "next-auth/react"
 import { Menu } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { signOut, useSession } from "next-auth/react"
+import { useState } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { Button } from "@/components/ui/button"
 import {
   Sheet,
   SheetContent,
@@ -25,7 +25,11 @@ export function MobileNav({ isMentor }: MobileNavProps) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden min-h-[44px] min-w-[44px]">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden min-h-[44px] min-w-[44px]"
+        >
           <Menu className="h-5 w-5" />
           <span className="sr-only">Open menu</span>
         </Button>
@@ -119,10 +123,7 @@ export function MobileNav({ isMentor }: MobileNavProps) {
               >
                 Sign In
               </Link>
-              <Link
-                href="/subscribe"
-                onClick={() => setOpen(false)}
-              >
+              <Link href="/subscribe" onClick={() => setOpen(false)}>
                 <Button className="w-full min-h-[44px]">Enroll Now</Button>
               </Link>
             </>

@@ -1,8 +1,8 @@
-import { db } from "@/lib/db";
-import { packs } from "@/lib/db/schema";
-import { eq, and, gt } from "drizzle-orm";
-import { addMonths, startOfMonth } from "date-fns";
-import type { Pack } from "@/lib/db/types";
+import { addMonths, startOfMonth } from "date-fns"
+import { and, eq, gt } from "drizzle-orm"
+import { db } from "@/lib/db"
+import { packs } from "@/lib/db/schema"
+import type { Pack } from "@/lib/db/types"
 
 export async function getActivePack(userId: string): Promise<Pack | null> {
   const [pack] = await db
@@ -15,9 +15,9 @@ export async function getActivePack(userId: string): Promise<Pack | null> {
         gt(packs.sessionsRemaining, 0)
       )
     )
-    .limit(1);
+    .limit(1)
 
-  return pack ?? null;
+  return pack ?? null
 }
 
 export async function createOrAddToPack(
@@ -28,13 +28,8 @@ export async function createOrAddToPack(
   const [existing] = await db
     .select()
     .from(packs)
-    .where(
-      and(
-        eq(packs.userId, userId),
-        gt(packs.expiresAt, new Date())
-      )
-    )
-    .limit(1);
+    .where(and(eq(packs.userId, userId), gt(packs.expiresAt, new Date())))
+    .limit(1)
 
   if (existing) {
     const [updated] = await db
@@ -44,12 +39,12 @@ export async function createOrAddToPack(
         sessionsRemaining: existing.sessionsRemaining + sessionsToAdd,
       })
       .where(eq(packs.id, existing.id))
-      .returning();
+      .returning()
 
-    return updated;
+    return updated
   }
 
-  const expiresAt = startOfMonth(addMonths(new Date(), 1));
+  const expiresAt = startOfMonth(addMonths(new Date(), 1))
 
   const [created] = await db
     .insert(packs)
@@ -59,7 +54,7 @@ export async function createOrAddToPack(
       sessionsRemaining: sessionsToAdd,
       expiresAt,
     })
-    .returning();
+    .returning()
 
-  return created;
+  return created
 }

@@ -1,12 +1,12 @@
-import { AuthGate } from "@/components/auth/auth-gate";
-import { RedeemClient } from "./redeem-client";
+import { AuthGate } from "@/components/auth/auth-gate"
+import { RedeemClient } from "./redeem-client"
 
 export default async function RedeemPage({
   searchParams,
 }: {
-  searchParams: Promise<{ code?: string }>;
+  searchParams: Promise<{ code?: string }>
 }) {
-  const { code } = await searchParams;
+  const { code } = await searchParams
 
   return (
     <div className="container mx-auto px-4 py-16">
@@ -16,5 +16,5 @@ export default async function RedeemPage({
         </div>
       </AuthGate>
     </div>
-  );
+  )
 }

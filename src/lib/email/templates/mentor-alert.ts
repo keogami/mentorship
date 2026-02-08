@@ -1,14 +1,14 @@
-import { escapeHtml } from "../escape";
+import { escapeHtml } from "../escape"
 
 export type MentorAlertData = {
-  title: string;
-  message: string;
-  details?: Record<string, string>;
-};
+  title: string
+  message: string
+  details?: Record<string, string>
+}
 
 export function mentorAlertEmail(data: MentorAlertData) {
-  const title = escapeHtml(data.title);
-  const message = escapeHtml(data.message);
+  const title = escapeHtml(data.title)
+  const message = escapeHtml(data.message)
 
   const detailsHtml = data.details
     ? `
@@ -23,7 +23,7 @@ export function mentorAlertEmail(data: MentorAlertData) {
         )
         .join("")}
     </table>`
-    : "";
+    : ""
 
   return {
     subject: `[Alert] ${data.title}`,
@@ -50,5 +50,5 @@ export function mentorAlertEmail(data: MentorAlertData) {
 </body>
 </html>
     `.trim(),
-  };
+  }
 }

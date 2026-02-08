@@ -3,10 +3,11 @@
  * This file exports the middleware function and config.
  * Import and re-export from middleware.ts at project root.
  */
-import { auth } from "@/auth"
-import { NextResponse } from "next/server"
+
 import type { NextRequest } from "next/server"
-import { protectedRoutes, adminRoutes } from "@/lib/auth/routes"
+import { NextResponse } from "next/server"
+import { auth } from "@/auth"
+import { adminRoutes, protectedRoutes } from "@/lib/auth/routes"
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -20,6 +21,7 @@ export async function proxy(request: NextRequest) {
 
   // Redirect unauthenticated users from protected routes to subscribe
   if ((isProtectedRoute || isAdminRoute) && !isAuthenticated) {
+    // TODO: should take to signin page
     const subscribeUrl = new URL("/subscribe", request.url)
     // Only pass the pathname as callbackUrl (not full URL) to prevent open redirects
     subscribeUrl.searchParams.set("callbackUrl", pathname)

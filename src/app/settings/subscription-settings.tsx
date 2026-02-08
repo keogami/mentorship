@@ -1,17 +1,7 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation"
+import { useState } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,36 +12,46 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import type { Plan } from "@/lib/db/types";
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import type { Plan } from "@/lib/db/types"
 
 type SafeSubscription = {
-  id: string;
-  userId: string;
-  status: string;
-  currentPeriodStart: Date;
-  currentPeriodEnd: Date;
-  sessionsUsedThisPeriod: number;
-  planId: string;
-  pendingPlanChangeId: string | null;
-  cancelledAt: Date | null;
-  cancelReason: string | null;
-  createdAt: Date;
-};
+  id: string
+  userId: string
+  status: string
+  currentPeriodStart: Date
+  currentPeriodEnd: Date
+  sessionsUsedThisPeriod: number
+  planId: string
+  pendingPlanChangeId: string | null
+  cancelledAt: Date | null
+  cancelReason: string | null
+  createdAt: Date
+}
 
 type SubscriptionSettingsProps = {
-  subscription: SafeSubscription;
-  currentPlan: Plan;
-  availablePlans: Plan[];
-  pendingPlan: Plan | null;
-};
+  subscription: SafeSubscription
+  currentPlan: Plan
+  availablePlans: Plan[]
+  pendingPlan: Plan | null
+}
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
-  }).format(new Date(date));
+  }).format(new Date(date))
 }
 
 function formatPrice(priceInr: number): string {
@@ -59,7 +59,7 @@ function formatPrice(priceInr: number): string {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
-  }).format(priceInr);
+  }).format(priceInr)
 }
 
 export function SubscriptionSettings({
@@ -68,83 +68,83 @@ export function SubscriptionSettings({
   availablePlans,
   pendingPlan,
 }: SubscriptionSettingsProps) {
-  const router = useRouter();
-  const [isChangingPlan, setIsChangingPlan] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const router = useRouter()
+  const [isChangingPlan, setIsChangingPlan] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
 
-  const period = currentPlan.period === "weekly" ? "week" : "month";
-  const otherPlans = availablePlans.filter((p) => p.id !== currentPlan.id);
+  const period = currentPlan.period === "weekly" ? "week" : "month"
+  const otherPlans = availablePlans.filter((p) => p.id !== currentPlan.id)
 
   async function handlePlanChange(newPlanId: string) {
-    setIsChangingPlan(true);
-    setError(null);
-    setSelectedPlanId(newPlanId);
+    setIsChangingPlan(true)
+    setError(null)
+    setSelectedPlanId(newPlanId)
 
     try {
       const response = await fetch("/api/subscribe/change", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newPlanId }),
-      });
+      })
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to change plan");
+        const data = await response.json()
+        throw new Error(data.error || "Failed to change plan")
       }
 
-      router.refresh();
+      router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
-      setIsChangingPlan(false);
-      setSelectedPlanId(null);
+      setIsChangingPlan(false)
+      setSelectedPlanId(null)
     }
   }
 
   async function handleCancelPendingChange() {
-    setIsChangingPlan(true);
-    setError(null);
+    setIsChangingPlan(true)
+    setError(null)
 
     try {
       const response = await fetch("/api/subscribe/change", {
         method: "DELETE",
-      });
+      })
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to cancel plan change");
+        const data = await response.json()
+        throw new Error(data.error || "Failed to cancel plan change")
       }
 
-      router.refresh();
+      router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
-      setIsChangingPlan(false);
+      setIsChangingPlan(false)
     }
   }
 
   async function handleCancelSubscription() {
-    setIsCancelling(true);
-    setError(null);
+    setIsCancelling(true)
+    setError(null)
 
     try {
       const response = await fetch("/api/subscribe/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: "User requested cancellation" }),
-      });
+      })
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to cancel subscription");
+        const data = await response.json()
+        throw new Error(data.error || "Failed to cancel subscription")
       }
 
-      router.push("/subscribe");
+      router.push("/subscribe")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-      setIsCancelling(false);
+      setError(err instanceof Error ? err.message : "Something went wrong")
+      setIsCancelling(false)
     }
   }
 
@@ -176,7 +176,9 @@ export function SubscriptionSettings({
               </p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold">{formatPrice(currentPlan.priceInr)}</p>
+              <p className="text-2xl font-bold">
+                {formatPrice(currentPlan.priceInr)}
+              </p>
               <p className="text-sm text-muted-foreground">per {period}</p>
             </div>
           </div>
@@ -185,7 +187,8 @@ export function SubscriptionSettings({
             <div className="flex justify-between">
               <span className="text-muted-foreground">Current period</span>
               <span>
-                {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
+                {formatDate(subscription.currentPeriodStart)} -{" "}
+                {formatDate(subscription.currentPeriodEnd)}
               </span>
             </div>
             <div className="mt-2 flex justify-between">
@@ -202,7 +205,10 @@ export function SubscriptionSettings({
                     Plan change scheduled
                   </p>
                   <p className="text-sm text-blue-700 dark:text-blue-300">
-                    Changing to <strong>{pendingPlan.name}</strong> ({formatPrice(pendingPlan.priceInr)}/{pendingPlan.period === "weekly" ? "week" : "month"}) on {formatDate(subscription.currentPeriodEnd)}
+                    Changing to <strong>{pendingPlan.name}</strong> (
+                    {formatPrice(pendingPlan.priceInr)}/
+                    {pendingPlan.period === "weekly" ? "week" : "month"}) on{" "}
+                    {formatDate(subscription.currentPeriodEnd)}
                   </p>
                 </div>
                 <Button
@@ -225,13 +231,14 @@ export function SubscriptionSettings({
           <CardHeader>
             <CardTitle>Change Plan</CardTitle>
             <CardDescription>
-              Switch to a different plan at the end of your current billing period
+              Switch to a different plan at the end of your current billing
+              period
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {otherPlans.map((plan) => {
-              const planPeriod = plan.period === "weekly" ? "week" : "month";
-              const isLoading = isChangingPlan && selectedPlanId === plan.id;
+              const planPeriod = plan.period === "weekly" ? "week" : "month"
+              const isLoading = isChangingPlan && selectedPlanId === plan.id
 
               return (
                 <div
@@ -241,7 +248,8 @@ export function SubscriptionSettings({
                   <div>
                     <p className="font-medium">{plan.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {plan.sessionsPerPeriod} sessions/{planPeriod} • {plan.weekendAccess ? "Any day" : "Weekdays only"}
+                      {plan.sessionsPerPeriod} sessions/{planPeriod} •{" "}
+                      {plan.weekendAccess ? "Any day" : "Weekdays only"}
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
@@ -258,7 +266,7 @@ export function SubscriptionSettings({
                     </Button>
                   </div>
                 </div>
-              );
+              )
             })}
           </CardContent>
           <CardFooter>
@@ -272,15 +280,18 @@ export function SubscriptionSettings({
       {/* Cancel Subscription Card */}
       <Card className="border-destructive/50">
         <CardHeader>
-          <CardTitle className="text-destructive">Cancel Subscription</CardTitle>
+          <CardTitle className="text-destructive">
+            Cancel Subscription
+          </CardTitle>
           <CardDescription>
             Cancel your subscription and stop future billing
           </CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Your subscription will be cancelled immediately and you will lose access to booking sessions.
-            Any unused sessions will not be refunded.
+            Your subscription will be cancelled immediately and you will lose
+            access to booking sessions. Any unused sessions will not be
+            refunded.
           </p>
         </CardContent>
         <CardFooter>
@@ -294,12 +305,19 @@ export function SubscriptionSettings({
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will cancel your subscription immediately. You will lose access to:
+                  This will cancel your subscription immediately. You will lose
+                  access to:
                   <ul className="mt-2 list-inside list-disc space-y-1">
-                    <li>{currentPlan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod} remaining sessions this {period}</li>
+                    <li>
+                      {currentPlan.sessionsPerPeriod -
+                        subscription.sessionsUsedThisPeriod}{" "}
+                      remaining sessions this {period}
+                    </li>
                     <li>Booking new mentorship sessions</li>
                   </ul>
-                  <p className="mt-4 font-medium">This action cannot be undone.</p>
+                  <p className="mt-4 font-medium">
+                    This action cannot be undone.
+                  </p>
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -316,5 +334,5 @@ export function SubscriptionSettings({
         </CardFooter>
       </Card>
     </div>
-  );
+  )
 }

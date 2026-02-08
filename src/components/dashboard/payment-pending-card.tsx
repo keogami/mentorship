@@ -1,9 +1,10 @@
-"use client";
+"use client"
 
-import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useEffect, useRef } from "react"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -11,32 +12,31 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+} from "@/components/ui/card"
 
 export function PaymentPendingCard() {
-  const router = useRouter();
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const router = useRouter()
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     intervalRef.current = setInterval(async () => {
       try {
-        const res = await fetch("/api/me");
-        if (!res.ok) return;
-        const data = await res.json();
+        const res = await fetch("/api/me")
+        if (!res.ok) return
+        const data = await res.json()
         if (data.subscription?.status === "active") {
-          if (intervalRef.current) clearInterval(intervalRef.current);
-          router.refresh();
+          if (intervalRef.current) clearInterval(intervalRef.current)
+          router.refresh()
         }
       } catch {
         // Silently ignore network errors during polling
       }
-    }, 5000);
+    }, 5000)
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [router]);
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [router])
 
   return (
     <Card>
@@ -48,8 +48,8 @@ export function PaymentPendingCard() {
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-muted-foreground">
-          Please complete your payment to activate your subscription.
-          If you&apos;ve already paid, it may take a few moments to process.
+          Please complete your payment to activate your subscription. If
+          you&apos;ve already paid, it may take a few moments to process.
         </p>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -62,5 +62,5 @@ export function PaymentPendingCard() {
         </Button>
       </CardFooter>
     </Card>
-  );
+  )
 }

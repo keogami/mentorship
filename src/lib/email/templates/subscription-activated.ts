@@ -1,16 +1,16 @@
-import { escapeHtml } from "../escape";
+import { escapeHtml } from "../escape"
 
 export type SubscriptionActivatedData = {
-  userName: string;
-  planName: string;
-  sessionsPerPeriod: number;
-  period: "weekly" | "monthly";
-};
+  userName: string
+  planName: string
+  sessionsPerPeriod: number
+  period: "weekly" | "monthly"
+}
 
 export function subscriptionActivatedEmail(data: SubscriptionActivatedData) {
-  const periodLabel = data.period === "weekly" ? "week" : "month";
-  const userName = escapeHtml(data.userName);
-  const planName = escapeHtml(data.planName);
+  const periodLabel = data.period === "weekly" ? "week" : "month"
+  const userName = escapeHtml(data.userName)
+  const planName = escapeHtml(data.planName)
 
   return {
     subject: `Welcome to Mentorship - Your ${data.planName} plan is now active`,
@@ -46,5 +46,5 @@ export function subscriptionActivatedEmail(data: SubscriptionActivatedData) {
 </body>
 </html>
     `.trim(),
-  };
+  }
 }

@@ -1,27 +1,22 @@
-export { sendEmail, sendBulkEmails } from "./client";
-export type { EmailMessage } from "./client";
-
+export type { EmailMessage } from "./client"
+export { sendBulkEmails, sendEmail } from "./client"
 export {
-  subscriptionActivatedEmail,
-  type SubscriptionActivatedData,
-} from "./templates/subscription-activated";
-
-export {
-  subscriptionCancelledEmail,
-  type SubscriptionCancelledData,
-} from "./templates/subscription-cancelled";
-
-export {
-  mentorBlockNoticeEmail,
-  type MentorBlockNoticeData,
-} from "./templates/mentor-block-notice";
-
-export {
-  mentorCancelledUserEmail,
-  type MentorCancelledUserData,
-} from "./templates/mentor-cancelled-user";
-
-export {
-  mentorAlertEmail,
   type MentorAlertData,
-} from "./templates/mentor-alert";
+  mentorAlertEmail,
+} from "./templates/mentor-alert"
+export {
+  type MentorBlockNoticeData,
+  mentorBlockNoticeEmail,
+} from "./templates/mentor-block-notice"
+export {
+  type MentorCancelledUserData,
+  mentorCancelledUserEmail,
+} from "./templates/mentor-cancelled-user"
+export {
+  type SubscriptionActivatedData,
+  subscriptionActivatedEmail,
+} from "./templates/subscription-activated"
+export {
+  type SubscriptionCancelledData,
+  subscriptionCancelledEmail,
+} from "./templates/subscription-cancelled"

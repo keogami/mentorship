@@ -1,10 +1,9 @@
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { users, sessions } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
-import { Button } from "@/components/ui/button";
+import { desc, eq } from "drizzle-orm"
+import Link from "next/link"
+import { redirect } from "next/navigation"
+import { auth } from "@/auth"
+import { GoBackButton } from "@/components/layout/go-back-button"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -12,32 +11,33 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { getUserSubscriptionWithPlan } from "@/lib/booking";
-import { getActivePack } from "@/lib/packs";
-import { GoBackButton } from "@/components/layout/go-back-button";
-import { SessionsClient } from "./sessions-client";
+} from "@/components/ui/card"
+import { getUserSubscriptionWithPlan } from "@/lib/booking"
+import { db } from "@/lib/db"
+import { sessions, users } from "@/lib/db/schema"
+import { getActivePack } from "@/lib/packs"
+import { SessionsClient } from "./sessions-client"
 
 export default async function SessionsPage() {
-  const session = await auth();
+  const session = await auth()
 
   if (!session?.user?.email) {
-    redirect("/subscribe");
+    redirect("/subscribe")
   }
 
   // Get user from database
   const [user] = await db
     .select()
     .from(users)
-    .where(eq(users.email, session.user.email));
+    .where(eq(users.email, session.user.email))
 
   if (!user) {
-    redirect("/subscribe");
+    redirect("/subscribe")
   }
 
   // Get subscription and pack
-  const subscription = await getUserSubscriptionWithPlan(user.id);
-  const activePack = await getActivePack(user.id);
+  const subscription = await getUserSubscriptionWithPlan(user.id)
+  const activePack = await getActivePack(user.id)
 
   // Get user's sessions
   const userSessions = await db
@@ -45,7 +45,7 @@ export default async function SessionsPage() {
     .from(sessions)
     .where(eq(sessions.userId, user.id))
     .orderBy(desc(sessions.scheduledAt))
-    .limit(50);
+    .limit(50)
 
   const formattedSessions = userSessions.map((s) => ({
     id: s.id,
@@ -56,15 +56,15 @@ export default async function SessionsPage() {
     cancelledAt: s.cancelledAt?.toISOString() || null,
     lateCancel: s.lateCancel,
     createdAt: s.createdAt.toISOString(),
-  }));
+  }))
 
-  const hasActiveSubscription = subscription?.status === "active";
+  const hasActiveSubscription = subscription?.status === "active"
   const subRemaining = hasActiveSubscription
     ? subscription.plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod
-    : 0;
-  const packRemaining = activePack?.sessionsRemaining ?? 0;
-  const sessionsRemaining = subRemaining + packRemaining;
-  const hasAnySessions = sessionsRemaining > 0;
+    : 0
+  const packRemaining = activePack?.sessionsRemaining ?? 0
+  const sessionsRemaining = subRemaining + packRemaining
+  const hasAnySessions = sessionsRemaining > 0
 
   return (
     <div className="container mx-auto px-4 py-16">
@@ -91,7 +91,11 @@ export default async function SessionsPage() {
                 <p className="text-sm text-muted-foreground">
                   sessions remaining
                   {hasActiveSubscription && (
-                    <> ({subRemaining} subscription{packRemaining > 0 && <> + {packRemaining} pack</>})</>
+                    <>
+                      {" "}
+                      ({subRemaining} subscription
+                      {packRemaining > 0 && <> + {packRemaining} pack</>})
+                    </>
                   )}
                   {!hasActiveSubscription && packRemaining > 0 && " (pack)"}
                 </p>
@@ -120,5 +124,5 @@ export default async function SessionsPage() {
         <SessionsClient initialSessions={formattedSessions} />
       </div>
     </div>
-  );
+  )
 }

@@ -1,9 +1,9 @@
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import { auth } from "@/auth"
 import { AuthButton } from "@/components/auth/auth-button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { Button } from "@/components/ui/button"
 import { MobileNav } from "./mobile-nav"
-import { auth } from "@/auth"
 
 export async function Header() {
   const session = await auth()

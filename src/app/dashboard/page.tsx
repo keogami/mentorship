@@ -1,10 +1,10 @@
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { users, subscriptions, plans, subscriptionCredits } from "@/lib/db/schema";
-import { eq, and, sum } from "drizzle-orm";
-import { Button } from "@/components/ui/button";
+import { and, eq, sum } from "drizzle-orm"
+import Link from "next/link"
+import { redirect } from "next/navigation"
+import { auth } from "@/auth"
+import { PaymentPendingCard } from "@/components/dashboard/payment-pending-card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -12,17 +12,22 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { getActivePack } from "@/lib/packs";
-import { PaymentPendingCard } from "@/components/dashboard/payment-pending-card";
+} from "@/components/ui/card"
+import { db } from "@/lib/db"
+import {
+  plans,
+  subscriptionCredits,
+  subscriptions,
+  users,
+} from "@/lib/db/schema"
+import { getActivePack } from "@/lib/packs"
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
-  }).format(date);
+  }).format(date)
 }
 
 function formatPrice(priceInr: number): string {
@@ -30,43 +35,45 @@ function formatPrice(priceInr: number): string {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
-  }).format(priceInr);
+  }).format(priceInr)
 }
 
-function getStatusBadgeVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+function getStatusBadgeVariant(
+  status: string
+): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
     case "active":
-      return "default";
+      return "default"
     case "pending":
-      return "secondary";
+      return "secondary"
     case "cancelled":
     case "past_due":
-      return "destructive";
+      return "destructive"
     default:
-      return "outline";
+      return "outline"
   }
 }
 
 export default async function DashboardPage() {
-  const session = await auth();
+  const session = await auth()
 
   if (!session?.user?.email) {
-    redirect("/subscribe");
+    redirect("/subscribe")
   }
 
   // Redirect mentor to admin dashboard
   if (session.user.email === process.env.MENTOR_EMAIL) {
-    redirect("/admin");
+    redirect("/admin")
   }
 
   // Get user from database
   const [user] = await db
     .select()
     .from(users)
-    .where(eq(users.email, session.user.email));
+    .where(eq(users.email, session.user.email))
 
   if (!user) {
-    redirect("/subscribe");
+    redirect("/subscribe")
   }
 
   // Get active subscription with plan
@@ -78,17 +85,14 @@ export default async function DashboardPage() {
     .from(subscriptions)
     .innerJoin(plans, eq(subscriptions.planId, plans.id))
     .where(
-      and(
-        eq(subscriptions.userId, user.id),
-        eq(subscriptions.status, "active")
-      )
+      and(eq(subscriptions.userId, user.id), eq(subscriptions.status, "active"))
     )
-    .limit(1);
+    .limit(1)
 
-  const activeSubscription = subscriptionWithPlan[0];
+  const activeSubscription = subscriptionWithPlan[0]
 
   // Fetch active pack
-  const activePack = await getActivePack(user.id);
+  const activePack = await getActivePack(user.id)
 
   // If no active subscription, check for pending
   if (!activeSubscription) {
@@ -105,7 +109,7 @@ export default async function DashboardPage() {
           eq(subscriptions.status, "pending")
         )
       )
-      .limit(1);
+      .limit(1)
 
     if (pendingSubscription[0]) {
       return (
@@ -114,7 +118,7 @@ export default async function DashboardPage() {
             <PaymentPendingCard />
           </div>
         </div>
-      );
+      )
     }
 
     // No subscription — show pack if available, otherwise prompt to subscribe
@@ -123,9 +127,7 @@ export default async function DashboardPage() {
         <div className="mx-auto max-w-2xl space-y-6">
           <div>
             <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Welcome back, {user.name}
-            </p>
+            <p className="text-muted-foreground">Welcome back, {user.name}</p>
           </div>
 
           {activePack && (
@@ -162,7 +164,9 @@ export default async function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>{activePack ? "Get a Subscription" : "No Active Subscription"}</CardTitle>
+              <CardTitle>
+                {activePack ? "Get a Subscription" : "No Active Subscription"}
+              </CardTitle>
               <CardDescription>
                 {activePack
                   ? "Subscribe for more sessions and better value"
@@ -202,32 +206,31 @@ export default async function DashboardPage() {
           </Card>
         </div>
       </div>
-    );
+    )
   }
 
-  const { subscription, plan } = activeSubscription;
+  const { subscription, plan } = activeSubscription
 
   // Calculate bonus days from credits
   const [creditsResult] = await db
     .select({ totalDays: sum(subscriptionCredits.days) })
     .from(subscriptionCredits)
-    .where(eq(subscriptionCredits.subscriptionId, subscription.id));
+    .where(eq(subscriptionCredits.subscriptionId, subscription.id))
 
-  const bonusDays = Number(creditsResult?.totalDays) || 0;
-  const effectiveEndDate = new Date(subscription.currentPeriodEnd);
-  effectiveEndDate.setDate(effectiveEndDate.getDate() + bonusDays);
+  const bonusDays = Number(creditsResult?.totalDays) || 0
+  const effectiveEndDate = new Date(subscription.currentPeriodEnd)
+  effectiveEndDate.setDate(effectiveEndDate.getDate() + bonusDays)
 
-  const sessionsRemaining = plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod;
-  const period = plan.period === "weekly" ? "week" : "month";
+  const sessionsRemaining =
+    plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod
+  const period = plan.period === "weekly" ? "week" : "month"
 
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="mx-auto max-w-2xl space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back, {user.name}
-          </p>
+          <p className="text-muted-foreground">Welcome back, {user.name}</p>
         </div>
 
         <Card>
@@ -249,7 +252,8 @@ export default async function DashboardPage() {
               <div className="rounded-lg border p-4">
                 <p className="text-sm text-muted-foreground">Sessions Used</p>
                 <p className="text-2xl font-bold">
-                  {subscription.sessionsUsedThisPeriod} / {plan.sessionsPerPeriod}
+                  {subscription.sessionsUsedThisPeriod} /{" "}
+                  {plan.sessionsPerPeriod}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {sessionsRemaining} remaining this {period}
@@ -258,11 +262,13 @@ export default async function DashboardPage() {
               <div className="rounded-lg border p-4">
                 <p className="text-sm text-muted-foreground">Current Period</p>
                 <p className="text-lg font-medium">
-                  {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
+                  {formatDate(subscription.currentPeriodStart)} -{" "}
+                  {formatDate(subscription.currentPeriodEnd)}
                 </p>
                 {bonusDays > 0 && (
                   <p className="text-sm text-green-600">
-                    +{bonusDays} bonus days (until {formatDate(effectiveEndDate)})
+                    +{bonusDays} bonus days (until{" "}
+                    {formatDate(effectiveEndDate)})
                   </p>
                 )}
               </div>
@@ -271,8 +277,14 @@ export default async function DashboardPage() {
             <div className="rounded-lg border p-4">
               <p className="text-sm text-muted-foreground">Plan Features</p>
               <ul className="mt-2 space-y-1 text-sm">
-                <li>{plan.sessionsPerPeriod} sessions per {period}</li>
-                <li>{plan.weekendAccess ? "Book any day including weekends" : "Mon-Fri booking only"}</li>
+                <li>
+                  {plan.sessionsPerPeriod} sessions per {period}
+                </li>
+                <li>
+                  {plan.weekendAccess
+                    ? "Book any day including weekends"
+                    : "Mon-Fri booking only"}
+                </li>
               </ul>
             </div>
           </CardContent>
@@ -331,5 +343,5 @@ export default async function DashboardPage() {
         </Card>
       </div>
     </div>
-  );
+  )
 }

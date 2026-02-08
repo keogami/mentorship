@@ -1,25 +1,25 @@
-"use client";
+"use client"
 
-import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect } from "react"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
 
 export default function BookError({
   error,
   reset,
 }: {
-  error: Error & { digest?: string };
-  reset: () => void;
+  error: Error & { digest?: string }
+  reset: () => void
 }) {
   useEffect(() => {
-    console.error("Booking error:", error);
-  }, [error]);
+    console.error("Booking error:", error)
+  }, [error])
 
   return (
     <div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4">
@@ -37,5 +37,5 @@ export default function BookError({
         </CardFooter>
       </Card>
     </div>
-  );
+  )
 }

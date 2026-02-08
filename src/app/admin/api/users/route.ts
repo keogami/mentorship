@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
-import { db } from "@/lib/db";
-import { users, subscriptions, plans } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm"
+import { NextResponse } from "next/server"
+import { requireAdmin } from "@/lib/admin/auth"
+import { db } from "@/lib/db"
+import { plans, subscriptions, users } from "@/lib/db/schema"
 
 export async function GET() {
-  const adminCheck = await requireAdmin();
-  if (!adminCheck.authorized) return adminCheck.response;
+  const adminCheck = await requireAdmin()
+  if (!adminCheck.authorized) return adminCheck.response
 
   const results = await db
     .select({
@@ -29,31 +29,31 @@ export async function GET() {
     .from(users)
     .innerJoin(subscriptions, eq(users.id, subscriptions.userId))
     .innerJoin(plans, eq(subscriptions.planId, plans.id))
-    .orderBy(desc(subscriptions.createdAt));
+    .orderBy(desc(subscriptions.createdAt))
 
   // Group by user, taking the most recent subscription
   const userMap = new Map<
     string,
     {
-      id: string;
-      name: string;
-      email: string;
-      blocked: boolean;
-      createdAt: Date;
+      id: string
+      name: string
+      email: string
+      blocked: boolean
+      createdAt: Date
       subscription: {
-        id: string;
-        status: string;
-        planName: string;
-        planSlug: string;
-        priceInr: number;
-        period: string;
-        sessionsUsed: number;
-        sessionsTotal: number;
-        currentPeriodEnd: Date;
-        cancelledAt: Date | null;
-      };
+        id: string
+        status: string
+        planName: string
+        planSlug: string
+        priceInr: number
+        period: string
+        sessionsUsed: number
+        sessionsTotal: number
+        currentPeriodEnd: Date
+        cancelledAt: Date | null
+      }
     }
-  >();
+  >()
 
   for (const row of results) {
     if (!userMap.has(row.userId)) {
@@ -75,9 +75,9 @@ export async function GET() {
           currentPeriodEnd: row.currentPeriodEnd,
           cancelledAt: row.cancelledAt,
         },
-      });
+      })
     }
   }
 
-  return NextResponse.json({ users: Array.from(userMap.values()) });
+  return NextResponse.json({ users: Array.from(userMap.values()) })
 }

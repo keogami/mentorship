@@ -1,35 +1,35 @@
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { users, subscriptions, plans } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { Button } from "@/components/ui/button";
-import { GoBackButton } from "@/components/layout/go-back-button";
+import { and, eq } from "drizzle-orm"
+import Link from "next/link"
+import { redirect } from "next/navigation"
+import { auth } from "@/auth"
+import { GoBackButton } from "@/components/layout/go-back-button"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { SubscriptionSettings } from "./subscription-settings";
+} from "@/components/ui/card"
+import { db } from "@/lib/db"
+import { plans, subscriptions, users } from "@/lib/db/schema"
+import { SubscriptionSettings } from "./subscription-settings"
 
 export default async function SettingsPage() {
-  const session = await auth();
+  const session = await auth()
 
   if (!session?.user?.email) {
-    redirect("/subscribe");
+    redirect("/subscribe")
   }
 
   // Get user from database
   const [user] = await db
     .select()
     .from(users)
-    .where(eq(users.email, session.user.email));
+    .where(eq(users.email, session.user.email))
 
   if (!user) {
-    redirect("/subscribe");
+    redirect("/subscribe")
   }
 
   // Get active subscription with plan
@@ -41,26 +41,23 @@ export default async function SettingsPage() {
     .from(subscriptions)
     .innerJoin(plans, eq(subscriptions.planId, plans.id))
     .where(
-      and(
-        eq(subscriptions.userId, user.id),
-        eq(subscriptions.status, "active")
-      )
+      and(eq(subscriptions.userId, user.id), eq(subscriptions.status, "active"))
     )
-    .limit(1);
+    .limit(1)
 
-  const activeSubscription = subscriptionWithPlan[0];
+  const activeSubscription = subscriptionWithPlan[0]
 
   // Get all available plans for plan change
   const availablePlans = await db
     .select()
     .from(plans)
-    .where(eq(plans.active, true));
+    .where(eq(plans.active, true))
 
   // Sort plans in order: weekly, monthly, anytime
   const sortedPlans = availablePlans.sort((a, b) => {
-    const order = ["weekly_weekday", "monthly_weekday", "anytime"];
-    return order.indexOf(a.slug) - order.indexOf(b.slug);
-  });
+    const order = ["weekly_weekday", "monthly_weekday", "anytime"]
+    return order.indexOf(a.slug) - order.indexOf(b.slug)
+  })
 
   if (!activeSubscription) {
     return (
@@ -84,17 +81,17 @@ export default async function SettingsPage() {
           </Card>
         </div>
       </div>
-    );
+    )
   }
 
   // Get pending plan change info if exists
-  let pendingPlan = null;
+  let pendingPlan = null
   if (activeSubscription.subscription.pendingPlanChangeId) {
     const [pending] = await db
       .select()
       .from(plans)
-      .where(eq(plans.id, activeSubscription.subscription.pendingPlanChangeId));
-    pendingPlan = pending;
+      .where(eq(plans.id, activeSubscription.subscription.pendingPlanChangeId))
+    pendingPlan = pending
   }
 
   return (
@@ -114,11 +111,14 @@ export default async function SettingsPage() {
             id: activeSubscription.subscription.id,
             userId: activeSubscription.subscription.userId,
             status: activeSubscription.subscription.status,
-            currentPeriodStart: activeSubscription.subscription.currentPeriodStart,
+            currentPeriodStart:
+              activeSubscription.subscription.currentPeriodStart,
             currentPeriodEnd: activeSubscription.subscription.currentPeriodEnd,
-            sessionsUsedThisPeriod: activeSubscription.subscription.sessionsUsedThisPeriod,
+            sessionsUsedThisPeriod:
+              activeSubscription.subscription.sessionsUsedThisPeriod,
             planId: activeSubscription.subscription.planId,
-            pendingPlanChangeId: activeSubscription.subscription.pendingPlanChangeId,
+            pendingPlanChangeId:
+              activeSubscription.subscription.pendingPlanChangeId,
             cancelledAt: activeSubscription.subscription.cancelledAt,
             cancelReason: activeSubscription.subscription.cancelReason,
             createdAt: activeSubscription.subscription.createdAt,
@@ -129,5 +129,5 @@ export default async function SettingsPage() {
         />
       </div>
     </div>
-  );
+  )
 }

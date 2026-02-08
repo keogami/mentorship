@@ -1,35 +1,39 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
+import { endOfDay, endOfWeek, startOfDay, startOfWeek } from "date-fns"
+import { and, desc, eq, gte, lte, sql } from "drizzle-orm"
+import { redirect } from "next/navigation"
+import { auth } from "@/auth"
+import { MENTOR_CONFIG } from "@/lib/constants"
+import { db } from "@/lib/db"
 import {
-  sessions,
-  subscriptions,
-  plans,
-  users,
+  coupons,
   mentorBlocks,
   mentorConfig,
-  coupons,
-} from "@/lib/db/schema";
-import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
-import { startOfDay, endOfDay, startOfWeek, endOfWeek } from "date-fns";
-import { MENTOR_CONFIG } from "@/lib/constants";
-import { razorpay } from "@/lib/razorpay/client";
-import { AdminClient } from "./admin-client";
+  plans,
+  sessions,
+  subscriptions,
+  users,
+} from "@/lib/db/schema"
+import { razorpay } from "@/lib/razorpay/client"
+import { AdminClient } from "./admin-client"
 
 export default async function AdminPage() {
   // Defense-in-depth: verify admin access even though middleware also checks
-  const session = await auth();
-  const mentorEmail = process.env.MENTOR_EMAIL;
-  if (!session?.user?.email || !mentorEmail || session.user.email !== mentorEmail) {
-    redirect("/dashboard");
+  const session = await auth()
+  const mentorEmail = process.env.MENTOR_EMAIL
+  if (
+    !session?.user?.email ||
+    !mentorEmail ||
+    session.user.email !== mentorEmail
+  ) {
+    redirect("/dashboard")
   }
 
-  const now = new Date();
-  const todayStart = startOfDay(now);
-  const todayEnd = endOfDay(now);
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-  const todayStr = now.toISOString().split("T")[0];
+  const now = new Date()
+  const todayStart = startOfDay(now)
+  const todayEnd = endOfDay(now)
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 })
+  const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
+  const todayStr = now.toISOString().split("T")[0]
 
   const [
     todaySessions,
@@ -81,7 +85,9 @@ export default async function AdminPage() {
       ),
 
     // Total sessions all time
-    db.select({ count: sql<number>`count(*)::int` }).from(sessions),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(sessions),
 
     // Active blocks (end date >= today)
     db
@@ -121,14 +127,20 @@ export default async function AdminPage() {
       .orderBy(desc(subscriptions.createdAt)),
 
     // All coupons
-    db.select().from(coupons).orderBy(desc(coupons.createdAt)),
+    db
+      .select()
+      .from(coupons)
+      .orderBy(desc(coupons.createdAt)),
 
     // Mentor config
-    db.select().from(mentorConfig).limit(1),
-  ]);
+    db
+      .select()
+      .from(mentorConfig)
+      .limit(1),
+  ])
 
   // Batch-fetch customer contacts from Razorpay
-  const customerContactMap = new Map<string, string | null>();
+  const customerContactMap = new Map<string, string | null>()
   try {
     const customerIds = [
       ...new Set(
@@ -136,48 +148,48 @@ export default async function AdminPage() {
           .map((u) => u.razorpayCustomerId)
           .filter((id): id is string => id != null)
       ),
-    ];
+    ]
     if (customerIds.length > 0) {
       const { items: customers } = await razorpay.customers.all({
         count: 100,
-      });
+      })
       for (const customer of customers) {
         customerContactMap.set(
           customer.id,
           (customer as { id: string; contact?: string }).contact ?? null
-        );
+        )
       }
     }
   } catch (err) {
-    console.error("Failed to fetch Razorpay customers:", err);
+    console.error("Failed to fetch Razorpay customers:", err)
   }
 
   // Group users by most recent subscription, serialize dates for client
-  const seenUserIds = new Set<string>();
+  const seenUserIds = new Set<string>()
   const serializedUsers = allUsers.reduce<
     Array<{
-      id: string;
-      name: string;
-      email: string;
-      blocked: boolean;
-      createdAt: string;
-      contact: string | null;
+      id: string
+      name: string
+      email: string
+      blocked: boolean
+      createdAt: string
+      contact: string | null
       subscription: {
-        id: string;
-        status: string;
-        planName: string;
-        planSlug: string;
-        priceInr: number;
-        period: string;
-        sessionsUsed: number;
-        sessionsTotal: number;
-        currentPeriodEnd: string;
-        cancelledAt: string | null;
-      };
+        id: string
+        status: string
+        planName: string
+        planSlug: string
+        priceInr: number
+        period: string
+        sessionsUsed: number
+        sessionsTotal: number
+        currentPeriodEnd: string
+        cancelledAt: string | null
+      }
     }>
   >((acc, row) => {
     if (!seenUserIds.has(row.userId)) {
-      seenUserIds.add(row.userId);
+      seenUserIds.add(row.userId)
       acc.push({
         id: row.userId,
         name: row.userName,
@@ -185,7 +197,7 @@ export default async function AdminPage() {
         blocked: row.userBlocked,
         createdAt: row.userCreatedAt.toISOString(),
         contact: row.razorpayCustomerId
-          ? customerContactMap.get(row.razorpayCustomerId) ?? null
+          ? (customerContactMap.get(row.razorpayCustomerId) ?? null)
           : null,
         subscription: {
           id: row.subscriptionId,
@@ -199,17 +211,17 @@ export default async function AdminPage() {
           currentPeriodEnd: row.currentPeriodEnd.toISOString(),
           cancelledAt: row.cancelledAt?.toISOString() ?? null,
         },
-      });
+      })
     }
-    return acc;
-  }, []);
+    return acc
+  }, [])
 
   const config = configRow || {
     maxSessionsPerDay: MENTOR_CONFIG.maxSessionsPerDay,
     bookingWindowDays: MENTOR_CONFIG.bookingWindowDays,
     cancellationNoticeHours: MENTOR_CONFIG.cancellationNoticeHours,
     updatedAt: null,
-  };
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -273,5 +285,5 @@ export default async function AdminPage() {
         />
       </div>
     </div>
-  );
+  )
 }

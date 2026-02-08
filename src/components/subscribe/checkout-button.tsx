@@ -1,21 +1,27 @@
-"use client";
+"use client"
 
-import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { loadRazorpayScript } from "@/lib/razorpay/types";
+import { useCallback, useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { loadRazorpayScript } from "@/lib/razorpay/types"
 
 type CheckoutButtonProps = {
-  planId: string;
-  planName: string;
-  razorpayKeyId: string;
-  userEmail?: string;
-  onSuccess?: () => void;
-  onError?: (error: string) => void;
-  children?: React.ReactNode;
-  className?: string;
-  variant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive";
-  size?: "default" | "sm" | "lg" | "icon";
-};
+  planId: string
+  planName: string
+  razorpayKeyId: string
+  userEmail?: string
+  onSuccess?: () => void
+  onError?: (error: string) => void
+  children?: React.ReactNode
+  className?: string
+  variant?:
+    | "default"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link"
+    | "destructive"
+  size?: "default" | "sm" | "lg" | "icon"
+}
 
 export function CheckoutButton({
   planId,
@@ -29,34 +35,34 @@ export function CheckoutButton({
   variant = "default",
   size = "default",
 }: CheckoutButtonProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
+  const [scriptLoaded, setScriptLoaded] = useState(false)
 
   useEffect(() => {
-    loadRazorpayScript().then(setScriptLoaded);
-  }, []);
+    loadRazorpayScript().then(setScriptLoaded)
+  }, [])
 
   const handleCheckout = useCallback(async () => {
     if (!scriptLoaded) {
-      onError?.("Payment system is loading. Please try again.");
-      return;
+      onError?.("Payment system is loading. Please try again.")
+      return
     }
 
-    setIsLoading(true);
+    setIsLoading(true)
 
     try {
       const response = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planId }),
-      });
+      })
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to create subscription");
+        const error = await response.json()
+        throw new Error(error.error || "Failed to create subscription")
       }
 
-      const { subscriptionId } = await response.json();
+      const { subscriptionId } = await response.json()
 
       const options = {
         key: razorpayKeyId,
@@ -65,28 +71,28 @@ export function CheckoutButton({
         description: `${planName} Subscription`,
         prefill: userEmail ? { email: userEmail } : undefined,
         handler: () => {
-          onSuccess?.();
-          window.location.href = "/dashboard";
+          onSuccess?.()
+          window.location.href = "/dashboard"
         },
         theme: {
           color: "#000000",
         },
         modal: {
           ondismiss: () => {
-            setIsLoading(false);
+            setIsLoading(false)
           },
         },
-      };
+      }
 
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
+      const razorpay = new window.Razorpay(options)
+      razorpay.open()
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Something went wrong";
-      onError?.(message);
-      setIsLoading(false);
+        error instanceof Error ? error.message : "Something went wrong"
+      onError?.(message)
+      setIsLoading(false)
     }
-  }, [planId, planName, razorpayKeyId, scriptLoaded, onSuccess, onError]);
+  }, [planId, planName, razorpayKeyId, scriptLoaded, onSuccess, onError])
 
   return (
     <Button
@@ -98,5 +104,5 @@ export function CheckoutButton({
     >
       {isLoading ? "Processing..." : children || "Subscribe"}
     </Button>
-  );
+  )
 }

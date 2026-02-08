@@ -1,24 +1,25 @@
-"use client";
+"use client"
 
-import { useMemo, useState } from "react";
-import { format, parseISO } from "date-fns";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { TimeSlot } from "./time-slot";
-import type { DaySlots } from "@/lib/booking/slots";
+import { format, parseISO } from "date-fns"
+import { useMemo, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import { Card, CardContent } from "@/components/ui/card"
+import type { DaySlots } from "@/lib/booking/slots"
+import { TimeSlot } from "./time-slot"
 
 type CalendarWeekViewProps = {
-  days: DaySlots[];
+  days: DaySlots[]
   userContext: {
-    sessionsRemaining: number;
-    hasPendingSession: boolean;
-    weekendAccess: boolean;
-    hasActiveSubscription: boolean;
-  } | null;
-  onBook: (scheduledAt: string) => Promise<void>;
-  isBooking?: boolean;
-};
+    sessionsRemaining: number
+    hasPendingSession: boolean
+    weekendAccess: boolean
+    hasActiveSubscription: boolean
+  } | null
+  // TODO: handle the warning that a function can't be a prop on a use client component. it gotta be a server action, and named accordingly
+  onBook: (scheduledAt: string) => Promise<void>
+  isBooking?: boolean
+}
 
 export function CalendarWeekView({
   days,
@@ -26,67 +27,67 @@ export function CalendarWeekView({
   onBook,
   isBooking = false,
 }: CalendarWeekViewProps) {
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
 
   const canBook =
     userContext?.hasActiveSubscription &&
     userContext.sessionsRemaining > 0 &&
-    !userContext.hasPendingSession;
+    !userContext.hasPendingSession
 
   // Build a Map<YYYY-MM-DD, DaySlots> for O(1) lookup
   const dayMap = useMemo(() => {
-    const map = new Map<string, DaySlots>();
+    const map = new Map<string, DaySlots>()
     for (const day of days) {
-      map.set(day.date, day);
+      map.set(day.date, day)
     }
-    return map;
-  }, [days]);
+    return map
+  }, [days])
 
   // Default month for the calendar (first bookable day)
-  const fromDate = days.length > 0 ? parseISO(days[0].date) : undefined;
+  const fromDate = days.length > 0 ? parseISO(days[0].date) : undefined
 
   // Set of enabled date strings (within window, not blocked, has at least one available slot or is selectable)
   const enabledDates = useMemo(() => {
-    const set = new Set<string>();
+    const set = new Set<string>()
     for (const day of days) {
-      set.add(day.date);
+      set.add(day.date)
     }
-    return set;
-  }, [days]);
+    return set
+  }, [days])
 
   // Disabled date matcher for the Calendar
   const disabledMatcher = (date: Date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    return !enabledDates.has(dateStr);
-  };
+    const dateStr = format(date, "yyyy-MM-dd")
+    return !enabledDates.has(dateStr)
+  }
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) {
-      setSelectedDate(null);
-      setSelectedSlot(null);
-      return;
+      setSelectedDate(null)
+      setSelectedSlot(null)
+      return
     }
-    const dateStr = format(date, "yyyy-MM-dd");
-    setSelectedDate(dateStr);
-    setSelectedSlot(null);
-  };
+    const dateStr = format(date, "yyyy-MM-dd")
+    setSelectedDate(dateStr)
+    setSelectedSlot(null)
+  }
 
   const handleSlotClick = (slotTime: string) => {
     if (canBook) {
-      setSelectedSlot(slotTime === selectedSlot ? null : slotTime);
+      setSelectedSlot(slotTime === selectedSlot ? null : slotTime)
     }
-  };
+  }
 
   const handleBookClick = async () => {
     if (selectedSlot && canBook) {
-      await onBook(selectedSlot);
-      setSelectedSlot(null);
-      setSelectedDate(null);
+      await onBook(selectedSlot)
+      setSelectedSlot(null)
+      setSelectedDate(null)
     }
-  };
+  }
 
-  const currentDay = selectedDate ? dayMap.get(selectedDate) : null;
+  const currentDay = selectedDate ? dayMap.get(selectedDate) : null
 
   return (
     <div className="space-y-6">
@@ -94,7 +95,9 @@ export function CalendarWeekView({
         <div className="flex flex-wrap items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">Sessions remaining:</span>
-            <span className="font-semibold">{userContext.sessionsRemaining}</span>
+            <span className="font-semibold">
+              {userContext.sessionsRemaining}
+            </span>
           </div>
           {userContext.hasPendingSession && (
             <div className="text-amber-600 dark:text-amber-400">
@@ -103,7 +106,8 @@ export function CalendarWeekView({
           )}
           {!userContext.weekendAccess && (
             <div className="text-muted-foreground">
-              Weekdays only (upgrade to Anytime or get a session pack for weekends)
+              Weekdays only (upgrade to Anytime or get a session pack for
+              weekends)
             </div>
           )}
         </div>
@@ -200,5 +204,5 @@ export function CalendarWeekView({
         </div>
       )}
     </div>
-  );
+  )
 }

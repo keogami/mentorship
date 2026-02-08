@@ -1,97 +1,92 @@
-"use client";
+"use client"
 
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { DashboardTab } from "@/components/admin/dashboard-tab";
-import { BlocksTab } from "@/components/admin/blocks-tab";
-import { UsersTab } from "@/components/admin/users-tab";
-import { CouponsTab } from "@/components/admin/coupons-tab";
-import { ConfigTab } from "@/components/admin/config-tab";
+import { BlocksTab } from "@/components/admin/blocks-tab"
+import { ConfigTab } from "@/components/admin/config-tab"
+import { CouponsTab } from "@/components/admin/coupons-tab"
+import { DashboardTab } from "@/components/admin/dashboard-tab"
+import { UsersTab } from "@/components/admin/users-tab"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 type TodaySession = {
-  id: string;
-  scheduledAt: string;
-  status: string;
-  meetLink: string | null;
-  durationMinutes: number;
-  user: { name: string; email: string };
-};
+  id: string
+  scheduledAt: string
+  status: string
+  meetLink: string | null
+  durationMinutes: number
+  user: { name: string; email: string }
+}
 
 type Stats = {
-  activeSubscribers: number;
-  sessionsToday: number;
-  sessionsThisWeek: number;
-  totalSessionsAllTime: number;
-};
+  activeSubscribers: number
+  sessionsToday: number
+  sessionsThisWeek: number
+  totalSessionsAllTime: number
+}
 
 type ActiveBlock = {
-  id: string;
-  startDate: string;
-  endDate: string;
-  reason: string;
-};
+  id: string
+  startDate: string
+  endDate: string
+  reason: string
+}
 
 type Block = {
-  id: string;
-  startDate: string;
-  endDate: string;
-  reason: string;
-  usersNotified: boolean;
-  createdAt: string;
-};
+  id: string
+  startDate: string
+  endDate: string
+  reason: string
+  usersNotified: boolean
+  createdAt: string
+}
 
 type AdminUser = {
-  id: string;
-  name: string;
-  email: string;
-  blocked: boolean;
-  createdAt: string;
-  contact: string | null;
+  id: string
+  name: string
+  email: string
+  blocked: boolean
+  createdAt: string
+  contact: string | null
   subscription: {
-    id: string;
-    status: string;
-    planName: string;
-    planSlug: string;
-    priceInr: number;
-    period: string;
-    sessionsUsed: number;
-    sessionsTotal: number;
-    currentPeriodEnd: string;
-    cancelledAt: string | null;
-  };
-};
+    id: string
+    status: string
+    planName: string
+    planSlug: string
+    priceInr: number
+    period: string
+    sessionsUsed: number
+    sessionsTotal: number
+    currentPeriodEnd: string
+    cancelledAt: string | null
+  }
+}
 
 type Coupon = {
-  id: string;
-  code: string;
-  sessionsGranted: number;
-  expiresAt: string | null;
-  maxUses: number | null;
-  uses: number;
-  active: boolean;
-  createdAt: string;
-};
+  id: string
+  code: string
+  sessionsGranted: number
+  expiresAt: string | null
+  maxUses: number | null
+  uses: number
+  active: boolean
+  createdAt: string
+}
 
 type Config = {
-  maxSessionsPerDay: number;
-  bookingWindowDays: number;
-  cancellationNoticeHours: number;
-  updatedAt: string | null;
-};
+  maxSessionsPerDay: number
+  bookingWindowDays: number
+  cancellationNoticeHours: number
+  updatedAt: string | null
+}
 
 type AdminClientProps = {
-  todaySessions: TodaySession[];
-  stats: Stats;
-  activeBlocks: ActiveBlock[];
-  blocks: Block[];
-  users: AdminUser[];
-  coupons: Coupon[];
-  config: Config;
-};
+  todaySessions: TodaySession[]
+  stats: Stats
+  activeBlocks: ActiveBlock[]
+  blocks: Block[]
+  users: AdminUser[]
+  coupons: Coupon[]
+  config: Config
+}
 
 export function AdminClient({
   todaySessions,
@@ -136,5 +131,5 @@ export function AdminClient({
         <ConfigTab config={config} />
       </TabsContent>
     </Tabs>
-  );
+  )
 }

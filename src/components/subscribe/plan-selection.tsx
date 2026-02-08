@@ -1,71 +1,74 @@
-"use client";
+"use client"
 
-import { useCallback, useEffect, useState } from "react";
-import { PlanCard } from "./plan-card";
-import { loadRazorpayScript } from "@/lib/razorpay/types";
-import type { Plan } from "@/lib/db/types";
+import { useCallback, useEffect, useState } from "react"
+import type { Plan } from "@/lib/db/types"
+import { loadRazorpayScript } from "@/lib/razorpay/types"
+import { PlanCard } from "./plan-card"
 
 type PlanSelectionProps = {
-  razorpayKeyId: string;
-  userEmail?: string;
-};
+  razorpayKeyId: string
+  userEmail?: string
+}
 
-export function PlanSelection({ razorpayKeyId, userEmail }: PlanSelectionProps) {
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [scriptLoaded, setScriptLoaded] = useState(false);
+export function PlanSelection({
+  razorpayKeyId,
+  userEmail,
+}: PlanSelectionProps) {
+  const [plans, setPlans] = useState<Plan[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [scriptLoaded, setScriptLoaded] = useState(false)
 
   useEffect(() => {
-    loadRazorpayScript().then(setScriptLoaded);
-  }, []);
+    loadRazorpayScript().then(setScriptLoaded)
+  }, [])
 
   useEffect(() => {
     async function fetchPlans() {
       try {
-        const response = await fetch("/api/plans");
-        if (!response.ok) throw new Error("Failed to fetch plans");
-        const data = await response.json();
+        const response = await fetch("/api/plans")
+        if (!response.ok) throw new Error("Failed to fetch plans")
+        const data = await response.json()
         // Sort plans in order: weekly, monthly, anytime
         const sorted = data.sort((a: Plan, b: Plan) => {
-          const order = ["weekly_weekday", "monthly_weekday", "anytime"];
-          return order.indexOf(a.slug) - order.indexOf(b.slug);
-        });
-        setPlans(sorted);
+          const order = ["weekly_weekday", "monthly_weekday", "anytime"]
+          return order.indexOf(a.slug) - order.indexOf(b.slug)
+        })
+        setPlans(sorted)
       } catch {
-        setError("Failed to load plans. Please refresh the page.");
+        setError("Failed to load plans. Please refresh the page.")
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
     }
-    fetchPlans();
-  }, []);
+    fetchPlans()
+  }, [])
 
   const handleSelectPlan = useCallback(
     async (planId: string) => {
       if (!scriptLoaded) {
-        setError("Payment system is loading. Please try again.");
-        return;
+        setError("Payment system is loading. Please try again.")
+        return
       }
 
-      setSelectedPlanId(planId);
-      setError(null);
+      setSelectedPlanId(planId)
+      setError(null)
 
       try {
         const response = await fetch("/api/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ planId }),
-        });
+        })
 
         if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || "Failed to create subscription");
+          const data = await response.json()
+          throw new Error(data.error || "Failed to create subscription")
         }
 
-        const { subscriptionId } = await response.json();
-        const plan = plans.find((p) => p.id === planId);
+        const { subscriptionId } = await response.json()
+        const plan = plans.find((p) => p.id === planId)
 
         const options = {
           key: razorpayKeyId,
@@ -74,29 +77,27 @@ export function PlanSelection({ razorpayKeyId, userEmail }: PlanSelectionProps) 
           description: `${plan?.name || "Plan"} Subscription`,
           prefill: userEmail ? { email: userEmail } : undefined,
           handler: () => {
-            window.location.href = "/dashboard";
+            window.location.href = "/dashboard"
           },
           theme: {
             color: "#000000",
           },
           modal: {
             ondismiss: () => {
-              setSelectedPlanId(null);
+              setSelectedPlanId(null)
             },
           },
-        };
+        }
 
-        const razorpay = new window.Razorpay(options);
-        razorpay.open();
+        const razorpay = new window.Razorpay(options)
+        razorpay.open()
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Something went wrong"
-        );
-        setSelectedPlanId(null);
+        setError(err instanceof Error ? err.message : "Something went wrong")
+        setSelectedPlanId(null)
       }
     },
     [plans, razorpayKeyId, scriptLoaded]
-  );
+  )
 
   if (isLoading) {
     return (
@@ -108,7 +109,7 @@ export function PlanSelection({ razorpayKeyId, userEmail }: PlanSelectionProps) 
           />
         ))}
       </div>
-    );
+    )
   }
 
   if (error && plans.length === 0) {
@@ -116,7 +117,7 @@ export function PlanSelection({ razorpayKeyId, userEmail }: PlanSelectionProps) 
       <div className="rounded-lg border p-6 text-center">
         <p className="text-muted-foreground">{error}</p>
       </div>
-    );
+    )
   }
 
   return (
@@ -142,5 +143,5 @@ export function PlanSelection({ razorpayKeyId, userEmail }: PlanSelectionProps) 
         All plans include 50-minute sessions with 4-hour cancellation policy
       </p>
     </div>
-  );
+  )
 }

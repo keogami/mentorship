@@ -1,31 +1,31 @@
-import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
-import { db } from "@/lib/db";
-import { users, subscriptions, plans, sessions } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { razorpay } from "@/lib/razorpay/client";
-import { deleteCalendarEvent } from "@/lib/google-calendar/client";
-import { sendEmail, mentorCancelledUserEmail } from "@/lib/email";
-import { validateBody, cancelUserSchema } from "@/lib/validation";
+import { and, eq } from "drizzle-orm"
+import { NextResponse } from "next/server"
+import { requireAdmin } from "@/lib/admin/auth"
+import { db } from "@/lib/db"
+import { plans, sessions, subscriptions, users } from "@/lib/db/schema"
+import { mentorCancelledUserEmail, sendEmail } from "@/lib/email"
+import { deleteCalendarEvent } from "@/lib/google-calendar/client"
+import { razorpay } from "@/lib/razorpay/client"
+import { cancelUserSchema, validateBody } from "@/lib/validation"
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminCheck = await requireAdmin();
-  if (!adminCheck.authorized) return adminCheck.response;
+  const adminCheck = await requireAdmin()
+  if (!adminCheck.authorized) return adminCheck.response
 
-  const { id: userId } = await params;
-  const body = await request.json();
-  const parsed = validateBody(cancelUserSchema, body);
-  if (!parsed.success) return parsed.response;
+  const { id: userId } = await params
+  const body = await request.json()
+  const parsed = validateBody(cancelUserSchema, body)
+  if (!parsed.success) return parsed.response
 
-  const { reason, blockUser } = parsed.data;
+  const { reason, blockUser } = parsed.data
 
   // 1. Find user
-  const [user] = await db.select().from(users).where(eq(users.id, userId));
+  const [user] = await db.select().from(users).where(eq(users.id, userId))
   if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+    return NextResponse.json({ error: "User not found" }, { status: 404 })
   }
 
   // 2. Find active subscription + plan
@@ -37,37 +37,34 @@ export async function POST(
     .from(subscriptions)
     .innerJoin(plans, eq(subscriptions.planId, plans.id))
     .where(
-      and(
-        eq(subscriptions.userId, userId),
-        eq(subscriptions.status, "active")
-      )
-    );
+      and(eq(subscriptions.userId, userId), eq(subscriptions.status, "active"))
+    )
 
   if (!subWithPlan) {
     return NextResponse.json(
       { error: "No active subscription found for this user" },
       { status: 400 }
-    );
+    )
   }
 
-  const { subscription, plan } = subWithPlan;
+  const { subscription, plan } = subWithPlan
 
   // 3. Calculate pro-rata refund
   const unusedSessions =
-    plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod;
-  const costPerSession = Math.floor(plan.priceInr / plan.sessionsPerPeriod);
-  const refundAmountInr = Math.max(0, unusedSessions * costPerSession);
-  const refundAmountPaise = refundAmountInr * 100;
+    plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod
+  const costPerSession = Math.floor(plan.priceInr / plan.sessionsPerPeriod)
+  const refundAmountInr = Math.max(0, unusedSessions * costPerSession)
+  const refundAmountPaise = refundAmountInr * 100
 
   // 4. Cancel Razorpay subscription
   try {
-    await razorpay.subscriptions.cancel(subscription.razorpaySubscriptionId);
+    await razorpay.subscriptions.cancel(subscription.razorpaySubscriptionId)
   } catch (err) {
-    console.error("Failed to cancel Razorpay subscription:", err);
+    console.error("Failed to cancel Razorpay subscription:", err)
     return NextResponse.json(
       { error: "Failed to cancel Razorpay subscription" },
       { status: 500 }
-    );
+    )
   }
 
   // 5. Issue refund using stored payment ID from webhook
@@ -75,10 +72,10 @@ export async function POST(
     try {
       await razorpay.payments.refund(subscription.latestPaymentId, {
         amount: refundAmountPaise,
-      });
+      })
     } catch (err) {
       // Log but don't fail — subscription is already cancelled
-      console.error("Failed to issue refund:", err);
+      console.error("Failed to issue refund:", err)
     }
   }
 
@@ -90,30 +87,28 @@ export async function POST(
       cancelledAt: new Date(),
       cancelReason: reason,
     })
-    .where(eq(subscriptions.id, subscription.id));
+    .where(eq(subscriptions.id, subscription.id))
 
   // 7. Optionally block user
   if (blockUser) {
-    await db
-      .update(users)
-      .set({ blocked: true })
-      .where(eq(users.id, userId));
+    await db.update(users).set({ blocked: true }).where(eq(users.id, userId))
   }
 
   // 8. Cancel pending sessions + delete calendar events
   const pendingSessions = await db
     .select()
     .from(sessions)
-    .where(
-      and(eq(sessions.userId, userId), eq(sessions.status, "scheduled"))
-    );
+    .where(and(eq(sessions.userId, userId), eq(sessions.status, "scheduled")))
 
   for (const s of pendingSessions) {
     if (s.googleEventId) {
       try {
-        await deleteCalendarEvent(s.googleEventId);
+        await deleteCalendarEvent(s.googleEventId)
       } catch (err) {
-        console.error(`Failed to delete calendar event ${s.googleEventId}:`, err);
+        console.error(
+          `Failed to delete calendar event ${s.googleEventId}:`,
+          err
+        )
       }
     }
     await db
@@ -122,7 +117,7 @@ export async function POST(
         status: "cancelled_by_mentor",
         cancelledAt: new Date(),
       })
-      .where(eq(sessions.id, s.id));
+      .where(eq(sessions.id, s.id))
   }
 
   // 9. Send termination email to user
@@ -131,13 +126,13 @@ export async function POST(
       userName: user.name,
       reason,
       refundAmount: refundAmountInr,
-    });
+    })
     await sendEmail({
       to: user.email,
       ...emailContent,
-    });
+    })
   } catch (err) {
-    console.error("Failed to send termination email:", err);
+    console.error("Failed to send termination email:", err)
   }
 
   return NextResponse.json({
@@ -145,5 +140,5 @@ export async function POST(
     refundAmountInr,
     sessionsAffected: pendingSessions.length,
     userBlocked: !!blockUser,
-  });
+  })
 }

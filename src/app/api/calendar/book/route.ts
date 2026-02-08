@@ -1,67 +1,82 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { users, sessions, subscriptions, packs, mentorBlocks, mentorConfig, plans, subscriptionCredits } from "@/lib/db/schema";
-import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
-import { createCalendarEvent } from "@/lib/google-calendar/client";
-import { MENTOR_CONFIG } from "@/lib/constants";
-import { addMinutes, startOfDay, endOfDay, addDays, isWeekend } from "date-fns";
-import { format } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
-import { validateBody, bookSessionSchema } from "@/lib/validation";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import {
+  addDays,
+  addMinutes,
+  endOfDay,
+  format,
+  isWeekend,
+  startOfDay,
+} from "date-fns"
+import { toZonedTime } from "date-fns-tz"
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm"
+import { NextResponse } from "next/server"
+import { auth } from "@/auth"
+import { MENTOR_CONFIG } from "@/lib/constants"
+import { db } from "@/lib/db"
+import {
+  mentorBlocks,
+  mentorConfig,
+  packs,
+  plans,
+  sessions,
+  subscriptionCredits,
+  subscriptions,
+  users,
+} from "@/lib/db/schema"
+import { createCalendarEvent } from "@/lib/google-calendar/client"
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit"
+import { bookSessionSchema, validateBody } from "@/lib/validation"
 
-const IST_TIMEZONE = "Asia/Kolkata";
+const IST_TIMEZONE = "Asia/Kolkata"
 
 export async function POST(request: Request) {
-  const session = await auth();
+  const session = await auth()
 
   if (!session?.user?.email) {
     return NextResponse.json(
       { error: "Authentication required" },
       { status: 401 }
-    );
+    )
   }
 
-  const rateCheck = checkRateLimit(`book:${session.user.email}`, RATE_LIMITS.book);
+  const rateCheck = checkRateLimit(
+    `book:${session.user.email}`,
+    RATE_LIMITS.book
+  )
   if (!rateCheck.allowed) {
     return NextResponse.json(
       { error: "Too many attempts. Please try again later." },
       { status: 429 }
-    );
+    )
   }
 
-  const body = await request.json();
-  const parsed = validateBody(bookSessionSchema, body);
-  if (!parsed.success) return parsed.response;
+  const body = await request.json()
+  const parsed = validateBody(bookSessionSchema, body)
+  if (!parsed.success) return parsed.response
 
-  const scheduledAt = new Date(parsed.data.scheduledAt);
+  const scheduledAt = new Date(parsed.data.scheduledAt)
 
   // Get user
   const [user] = await db
     .select()
     .from(users)
-    .where(eq(users.email, session.user.email));
+    .where(eq(users.email, session.user.email))
 
   if (!user) {
-    return NextResponse.json(
-      { error: "User not found" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "User not found" }, { status: 404 })
   }
 
   if (user.blocked) {
     return NextResponse.json(
       { error: "Your account has been suspended" },
       { status: 403 }
-    );
+    )
   }
 
   // Run entire booking flow inside a transaction with row-level locks
   const result = await db.transaction(async (tx) => {
     // Load mentor config
-    const [config] = await tx.select().from(mentorConfig).limit(1);
-    const cfg = config || MENTOR_CONFIG;
+    const [config] = await tx.select().from(mentorConfig).limit(1)
+    const cfg = config || MENTOR_CONFIG
 
     // 1. Lock and load subscription (if any)
     const [subRow] = await tx
@@ -87,28 +102,28 @@ export async function POST(request: Request) {
         )
       )
       .for("update")
-      .limit(1);
+      .limit(1)
 
     let subscription: {
-      id: string;
-      sessionsUsedThisPeriod: number;
-      currentPeriodEnd: Date;
+      id: string
+      sessionsUsedThisPeriod: number
+      currentPeriodEnd: Date
       plan: {
-        id: string;
-        name: string;
-        slug: string;
-        sessionsPerPeriod: number;
-        weekendAccess: boolean;
-      };
-      bonusDays: number;
-    } | null = null;
+        id: string
+        name: string
+        slug: string
+        sessionsPerPeriod: number
+        weekendAccess: boolean
+      }
+      bonusDays: number
+    } | null = null
 
     if (subRow) {
       const credits = await tx
         .select({ days: subscriptionCredits.days })
         .from(subscriptionCredits)
-        .where(eq(subscriptionCredits.subscriptionId, subRow.id));
-      const bonusDays = credits.reduce((sum, c) => sum + c.days, 0);
+        .where(eq(subscriptionCredits.subscriptionId, subRow.id))
+      const bonusDays = credits.reduce((sum, c) => sum + c.days, 0)
 
       subscription = {
         id: subRow.id,
@@ -122,7 +137,7 @@ export async function POST(request: Request) {
           weekendAccess: subRow.weekendAccess,
         },
         bonusDays,
-      };
+      }
     }
 
     // 2. Lock and load pack (if any)
@@ -137,24 +152,35 @@ export async function POST(request: Request) {
         )
       )
       .for("update")
-      .limit(1);
+      .limit(1)
 
     // 3. Must have at least one source
     if (!subscription && !pack) {
-      return { error: "You need an active subscription or session pack to book", status: 400 };
+      return {
+        error: "You need an active subscription or session pack to book",
+        status: 400,
+      }
     }
 
     // 4. Check subscription effective expiry and compute remaining
-    let subRemaining = 0;
+    let subRemaining = 0
     if (subscription) {
-      const effectiveEnd = addDays(subscription.currentPeriodEnd, subscription.bonusDays);
+      const effectiveEnd = addDays(
+        subscription.currentPeriodEnd,
+        subscription.bonusDays
+      )
       if (new Date() <= effectiveEnd) {
-        subRemaining = subscription.plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod;
+        subRemaining =
+          subscription.plan.sessionsPerPeriod -
+          subscription.sessionsUsedThisPeriod
       }
     }
-    const packRemaining = pack?.sessionsRemaining ?? 0;
+    const packRemaining = pack?.sessionsRemaining ?? 0
     if (subRemaining + packRemaining <= 0) {
-      return { error: "You have used all your sessions for this period", status: 400 };
+      return {
+        error: "You have used all your sessions for this period",
+        status: 400,
+      }
     }
 
     // 5. Check no pending session (inside transaction)
@@ -162,47 +188,59 @@ export async function POST(request: Request) {
       .select({ id: sessions.id })
       .from(sessions)
       .where(
-        and(
-          eq(sessions.userId, user.id),
-          eq(sessions.status, "scheduled")
-        )
+        and(eq(sessions.userId, user.id), eq(sessions.status, "scheduled"))
       )
-      .limit(1);
+      .limit(1)
 
     if (pending) {
-      return { error: "You already have a scheduled session. Complete or cancel it first.", status: 400 };
+      return {
+        error:
+          "You already have a scheduled session. Complete or cancel it first.",
+        status: 400,
+      }
     }
 
     // 6. Check slot is not in the past
     if (scheduledAt <= new Date()) {
-      return { error: "Cannot book a session in the past", status: 400 };
+      return { error: "Cannot book a session in the past", status: 400 }
     }
 
     // 7. Check valid time slot
-    const istTime = toZonedTime(scheduledAt, IST_TIMEZONE);
-    const hours = istTime.getHours();
+    const istTime = toZonedTime(scheduledAt, IST_TIMEZONE)
+    const hours = istTime.getHours()
     if (!(hours >= 14 && hours <= 18 && istTime.getMinutes() === 0)) {
-      return { error: "Invalid time slot. Sessions are available at 14:00, 15:00, 16:00, 17:00, and 18:00 IST", status: 400 };
+      return {
+        error:
+          "Invalid time slot. Sessions are available at 14:00, 15:00, 16:00, 17:00, and 18:00 IST",
+        status: 400,
+      }
     }
 
     // 8. Check within booking window
-    const now = new Date();
-    const minDate = addDays(startOfDay(now), 1);
-    const maxDate = addDays(startOfDay(now), cfg.bookingWindowDays + 1);
+    const now = new Date()
+    const minDate = addDays(startOfDay(now), 1)
+    const maxDate = addDays(startOfDay(now), cfg.bookingWindowDays + 1)
     if (scheduledAt < minDate || scheduledAt >= maxDate) {
-      return { error: `You can only book sessions 1-${cfg.bookingWindowDays} days in advance`, status: 400 };
+      return {
+        error: `You can only book sessions 1-${cfg.bookingWindowDays} days in advance`,
+        status: 400,
+      }
     }
 
     // 9. Check weekend access
-    const istDate = toZonedTime(scheduledAt, IST_TIMEZONE);
+    const istDate = toZonedTime(scheduledAt, IST_TIMEZONE)
     const weekendAccessAllowed =
-      (subscription && subscription.plan.weekendAccess) || !!pack;
+      (subscription && subscription.plan.weekendAccess) || !!pack
     if (isWeekend(istDate) && !weekendAccessAllowed) {
-      return { error: "Your plan does not include weekend booking. Upgrade to Anytime or get a session pack for weekends.", status: 400 };
+      return {
+        error:
+          "Your plan does not include weekend booking. Upgrade to Anytime or get a session pack for weekends.",
+        status: 400,
+      }
     }
 
     // 10. Check mentor not blocked
-    const dateStr = scheduledAt.toISOString().split("T")[0];
+    const dateStr = scheduledAt.toISOString().split("T")[0]
     const [block] = await tx
       .select({ id: mentorBlocks.id })
       .from(mentorBlocks)
@@ -212,14 +250,14 @@ export async function POST(request: Request) {
           gte(mentorBlocks.endDate, dateStr)
         )
       )
-      .limit(1);
+      .limit(1)
     if (block) {
-      return { error: "The mentor is unavailable on this date", status: 400 };
+      return { error: "The mentor is unavailable on this date", status: 400 }
     }
 
     // 11. Check user hasn't already booked this day
-    const dayStart = startOfDay(scheduledAt);
-    const dayEnd = endOfDay(scheduledAt);
+    const dayStart = startOfDay(scheduledAt)
+    const dayEnd = endOfDay(scheduledAt)
     const [existingBooking] = await tx
       .select({ id: sessions.id })
       .from(sessions)
@@ -231,9 +269,9 @@ export async function POST(request: Request) {
           inArray(sessions.status, ["scheduled", "completed"])
         )
       )
-      .limit(1);
+      .limit(1)
     if (existingBooking) {
-      return { error: "You can only book one session per day", status: 400 };
+      return { error: "You can only book one session per day", status: 400 }
     }
 
     // 12. Check mentor capacity (lock the count)
@@ -246,18 +284,18 @@ export async function POST(request: Request) {
           lte(sessions.scheduledAt, dayEnd),
           eq(sessions.status, "scheduled")
         )
-      );
+      )
     if ((capacityResult?.count ?? 0) >= cfg.maxSessionsPerDay) {
-      return { error: "All sessions are booked for this day", status: 400 };
+      return { error: "All sessions are booked for this day", status: 400 }
     }
 
     // 13. Determine debit source
-    let debitSource: "subscription" | "pack" = "pack";
+    let debitSource: "subscription" | "pack" = "pack"
     if (subscription && subRemaining > 0) {
       if (!isWeekend(istDate)) {
-        debitSource = "subscription";
+        debitSource = "subscription"
       } else if (subscription.plan.weekendAccess) {
-        debitSource = "subscription";
+        debitSource = "subscription"
       }
     }
 
@@ -266,7 +304,8 @@ export async function POST(request: Request) {
       .insert(sessions)
       .values({
         userId: user.id,
-        subscriptionId: debitSource === "subscription" ? subscription!.id : null,
+        subscriptionId:
+          debitSource === "subscription" ? subscription!.id : null,
         packId: debitSource === "pack" ? pack!.id : null,
         googleEventId: null,
         meetLink: null,
@@ -274,7 +313,7 @@ export async function POST(request: Request) {
         durationMinutes: MENTOR_CONFIG.sessionDurationMinutes,
         status: "scheduled",
       })
-      .returning();
+      .returning()
 
     // 15. Debit the source atomically
     if (debitSource === "subscription") {
@@ -283,14 +322,14 @@ export async function POST(request: Request) {
         .set({
           sessionsUsedThisPeriod: sql`${subscriptions.sessionsUsedThisPeriod} + 1`,
         })
-        .where(eq(subscriptions.id, subscription!.id));
+        .where(eq(subscriptions.id, subscription!.id))
     } else {
       await tx
         .update(packs)
         .set({
           sessionsRemaining: sql`${packs.sessionsRemaining} - 1`,
         })
-        .where(eq(packs.id, pack!.id));
+        .where(eq(packs.id, pack!.id))
     }
 
     return {
@@ -301,24 +340,21 @@ export async function POST(request: Request) {
       debitSource,
       subRemaining,
       packRemaining,
-    };
-  });
+    }
+  })
 
   // Handle transaction errors
   if ("error" in result) {
-    return NextResponse.json(
-      { error: result.error },
-      { status: result.status }
-    );
+    return NextResponse.json({ error: result.error }, { status: result.status })
   }
 
   // Create Google Calendar event outside the transaction
-  const endTime = addMinutes(scheduledAt, MENTOR_CONFIG.sessionDurationMinutes);
-  const istTime = toZonedTime(scheduledAt, IST_TIMEZONE);
-  const formattedDate = format(istTime, "EEEE, MMMM d, yyyy 'at' h:mm a");
+  const endTime = addMinutes(scheduledAt, MENTOR_CONFIG.sessionDurationMinutes)
+  const istTime = toZonedTime(scheduledAt, IST_TIMEZONE)
+  const formattedDate = format(istTime, "EEEE, MMMM d, yyyy 'at' h:mm a")
 
-  let googleEventId: string | null = null;
-  let meetLink: string | null = null;
+  let googleEventId: string | null = null
+  let meetLink: string | null = null
   try {
     const calendarResult = await createCalendarEvent(
       `Mentorship Session - ${user.name}`,
@@ -326,27 +362,27 @@ export async function POST(request: Request) {
       scheduledAt,
       endTime,
       user.email
-    );
-    googleEventId = calendarResult.eventId;
-    meetLink = calendarResult.meetLink;
+    )
+    googleEventId = calendarResult.eventId
+    meetLink = calendarResult.meetLink
 
     // Update session with calendar info
     await db
       .update(sessions)
       .set({ googleEventId, meetLink })
-      .where(eq(sessions.id, result.session.id));
+      .where(eq(sessions.id, result.session.id))
   } catch (error) {
-    console.error("Failed to create calendar event:", error);
+    console.error("Failed to create calendar event:", error)
   }
 
   const subRemainingAfter = result.subscription
     ? result.subscription.plan.sessionsPerPeriod -
       result.subscription.sessionsUsedThisPeriod -
       (result.debitSource === "subscription" ? 1 : 0)
-    : 0;
+    : 0
   const packRemainingAfter = result.pack
     ? result.pack.sessionsRemaining - (result.debitSource === "pack" ? 1 : 0)
-    : 0;
+    : 0
 
   return NextResponse.json({
     session: {
@@ -359,5 +395,5 @@ export async function POST(request: Request) {
       hasCalendarEvent: !!googleEventId,
     },
     sessionsRemaining: subRemainingAfter + packRemainingAfter,
-  });
+  })
 }

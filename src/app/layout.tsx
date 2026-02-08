@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
+import { SessionProvider } from "@/components/auth/session-provider"
 import { Footer } from "@/components/layout/footer"
 import { Header } from "@/components/layout/header"
-import { SessionProvider } from "@/components/auth/session-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 

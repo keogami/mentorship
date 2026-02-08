@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { plans } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq } from "drizzle-orm"
+import { NextResponse } from "next/server"
+import { db } from "@/lib/db"
+import { plans } from "@/lib/db/schema"
 
 export async function GET() {
   const activePlans = await db
@@ -17,7 +17,7 @@ export async function GET() {
       createdAt: plans.createdAt,
     })
     .from(plans)
-    .where(eq(plans.active, true));
+    .where(eq(plans.active, true))
 
-  return NextResponse.json(activePlans);
+  return NextResponse.json(activePlans)
 }

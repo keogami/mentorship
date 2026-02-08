@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -10,20 +10,20 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 type Config = {
-  maxSessionsPerDay: number;
-  bookingWindowDays: number;
-  cancellationNoticeHours: number;
-  updatedAt: string | null;
-};
+  maxSessionsPerDay: number
+  bookingWindowDays: number
+  cancellationNoticeHours: number
+  updatedAt: string | null
+}
 
 type ConfigTabProps = {
-  config: Config;
-};
+  config: Config
+}
 
 function formatDate(dateStr: string): string {
   return new Intl.DateTimeFormat("en-IN", {
@@ -33,28 +33,28 @@ function formatDate(dateStr: string): string {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "Asia/Kolkata",
-  }).format(new Date(dateStr));
+  }).format(new Date(dateStr))
 }
 
 export function ConfigTab({ config }: ConfigTabProps) {
-  const router = useRouter();
+  const router = useRouter()
   const [maxSessionsPerDay, setMaxSessionsPerDay] = useState(
     config.maxSessionsPerDay
-  );
+  )
   const [bookingWindowDays, setBookingWindowDays] = useState(
     config.bookingWindowDays
-  );
+  )
   const [cancellationNoticeHours, setCancellationNoticeHours] = useState(
     config.cancellationNoticeHours
-  );
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  )
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   async function handleSave() {
-    setIsSaving(true);
-    setError(null);
-    setSuccess(null);
+    setIsSaving(true)
+    setError(null)
+    setSuccess(null)
 
     try {
       const response = await fetch("/admin/api/config", {
@@ -65,19 +65,19 @@ export function ConfigTab({ config }: ConfigTabProps) {
           bookingWindowDays,
           cancellationNoticeHours,
         }),
-      });
+      })
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to update config");
+        const data = await response.json()
+        throw new Error(data.error || "Failed to update config")
       }
 
-      setSuccess("Configuration updated.");
-      router.refresh();
+      setSuccess("Configuration updated.")
+      router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
   }
 
@@ -164,5 +164,5 @@ export function ConfigTab({ config }: ConfigTabProps) {
         </CardFooter>
       </Card>
     </div>
-  );
+  )
 }

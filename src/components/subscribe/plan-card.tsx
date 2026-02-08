@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -9,17 +9,17 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import type { Plan } from "@/lib/db/types";
+} from "@/components/ui/card"
+import type { Plan } from "@/lib/db/types"
+import { cn } from "@/lib/utils"
 
 type PlanCardProps = {
-  plan: Plan;
-  featured?: boolean;
-  onSelect: (planId: string) => void;
-  isLoading?: boolean;
-  disabled?: boolean;
-};
+  plan: Plan
+  featured?: boolean
+  onSelect: (planId: string) => void
+  isLoading?: boolean
+  disabled?: boolean
+}
 
 function CheckIcon() {
   return (
@@ -38,7 +38,7 @@ function CheckIcon() {
     >
       <path d="M20 6 9 17l-5-5" />
     </svg>
-  );
+  )
 }
 
 function formatPrice(priceInr: number): string {
@@ -46,40 +46,40 @@ function formatPrice(priceInr: number): string {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
-  }).format(priceInr);
+  }).format(priceInr)
 }
 
 function getPlanFeatures(plan: Plan): string[] {
-  const features: string[] = [];
-  const period = plan.period === "weekly" ? "week" : "month";
-  const perSessionPrice = Math.round(plan.priceInr / plan.sessionsPerPeriod);
+  const features: string[] = []
+  const period = plan.period === "weekly" ? "week" : "month"
+  const perSessionPrice = Math.round(plan.priceInr / plan.sessionsPerPeriod)
 
-  features.push(`${plan.sessionsPerPeriod} sessions per ${period}`);
+  features.push(`${plan.sessionsPerPeriod} sessions per ${period}`)
 
   if (plan.weekendAccess) {
-    features.push("Book any day including weekends");
+    features.push("Book any day including weekends")
   } else {
-    features.push("Mon-Fri booking only");
+    features.push("Mon-Fri booking only")
   }
 
-  features.push(`${formatPrice(perSessionPrice)} per session`);
+  features.push(`${formatPrice(perSessionPrice)} per session`)
 
   if (plan.slug === "monthly_weekday") {
-    features.push("Best value for learners");
+    features.push("Best value for learners")
   } else if (plan.slug === "anytime") {
-    features.push("Flexible for professionals");
+    features.push("Flexible for professionals")
   } else if (plan.slug === "weekly_weekday") {
-    features.push("Cancel anytime");
+    features.push("Cancel anytime")
   }
 
-  return features;
+  return features
 }
 
 function getSavingsMessage(plan: Plan): string | null {
   if (plan.slug === "monthly_weekday") {
-    return "Save ₹2,400/month vs Weekly";
+    return "Save ₹2,400/month vs Weekly"
   }
-  return null;
+  return null
 }
 
 export function PlanCard({
@@ -89,9 +89,9 @@ export function PlanCard({
   isLoading,
   disabled,
 }: PlanCardProps) {
-  const features = getPlanFeatures(plan);
-  const savingsMessage = getSavingsMessage(plan);
-  const period = plan.period === "weekly" ? "week" : "month";
+  const features = getPlanFeatures(plan)
+  const savingsMessage = getSavingsMessage(plan)
+  const period = plan.period === "weekly" ? "week" : "month"
 
   return (
     <Card
@@ -139,9 +139,13 @@ export function PlanCard({
           onClick={() => onSelect(plan.id)}
           disabled={isLoading || disabled}
         >
-          {isLoading ? "Processing..." : featured ? "Get Started" : "Choose Plan"}
+          {isLoading
+            ? "Processing..."
+            : featured
+              ? "Get Started"
+              : "Choose Plan"}
         </Button>
       </CardFooter>
     </Card>
-  );
+  )
 }

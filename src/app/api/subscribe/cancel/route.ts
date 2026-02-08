@@ -1,38 +1,35 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { users, subscriptions } from "@/lib/db/schema";
-import { razorpay } from "@/lib/razorpay/client";
-import { eq, and } from "drizzle-orm";
-import { validateBody, subscribeCancelSchema } from "@/lib/validation";
+import { and, eq } from "drizzle-orm"
+import { NextResponse } from "next/server"
+import { auth } from "@/auth"
+import { db } from "@/lib/db"
+import { subscriptions, users } from "@/lib/db/schema"
+import { razorpay } from "@/lib/razorpay/client"
+import { subscribeCancelSchema, validateBody } from "@/lib/validation"
 
 export async function POST(request: Request) {
-  const session = await auth();
+  const session = await auth()
 
   if (!session?.user?.email) {
     return NextResponse.json(
       { error: "Authentication required" },
       { status: 401 }
-    );
+    )
   }
 
-  const body = await request.json();
-  const parsed = validateBody(subscribeCancelSchema, body);
-  if (!parsed.success) return parsed.response;
+  const body = await request.json()
+  const parsed = validateBody(subscribeCancelSchema, body)
+  if (!parsed.success) return parsed.response
 
-  const { reason } = parsed.data;
+  const { reason } = parsed.data
 
   // Get user from database
   const [user] = await db
     .select()
     .from(users)
-    .where(eq(users.email, session.user.email));
+    .where(eq(users.email, session.user.email))
 
   if (!user) {
-    return NextResponse.json(
-      { error: "User not found" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "User not found" }, { status: 404 })
   }
 
   // Get user's active subscription
@@ -40,28 +37,25 @@ export async function POST(request: Request) {
     .select()
     .from(subscriptions)
     .where(
-      and(
-        eq(subscriptions.userId, user.id),
-        eq(subscriptions.status, "active")
-      )
-    );
+      and(eq(subscriptions.userId, user.id), eq(subscriptions.status, "active"))
+    )
 
   if (!subscription) {
     return NextResponse.json(
       { error: "No active subscription found" },
       { status: 404 }
-    );
+    )
   }
 
   // Cancel subscription at cycle end in Razorpay
   try {
-    await razorpay.subscriptions.cancel(subscription.razorpaySubscriptionId);
+    await razorpay.subscriptions.cancel(subscription.razorpaySubscriptionId)
   } catch (error) {
-    console.error("Failed to cancel Razorpay subscription:", error);
+    console.error("Failed to cancel Razorpay subscription:", error)
     return NextResponse.json(
       { error: "Failed to cancel subscription with payment provider" },
       { status: 500 }
-    );
+    )
   }
 
   // Update subscription in our database
@@ -72,10 +66,10 @@ export async function POST(request: Request) {
       cancelledAt: new Date(),
       cancelReason: reason || "User requested cancellation",
     })
-    .where(eq(subscriptions.id, subscription.id));
+    .where(eq(subscriptions.id, subscription.id))
 
   return NextResponse.json({
     message: "Subscription cancelled successfully",
     effectiveDate: subscription.currentPeriodEnd,
-  });
+  })
 }

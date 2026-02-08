@@ -1,9 +1,11 @@
-import { pgEnum, pgTable, text, boolean, timestamp } from "drizzle-orm/pg-core";
+import { boolean, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core"
 
-export const authProviderEnum = pgEnum("auth_provider", ["github", "google"]);
+export const authProviderEnum = pgEnum("auth_provider", ["github", "google"])
 
 export const users = pgTable("users", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
   provider: authProviderEnum("provider").notNull(),
@@ -11,4 +13,4 @@ export const users = pgTable("users", {
   image: text("image"),
   blocked: boolean("blocked").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+})

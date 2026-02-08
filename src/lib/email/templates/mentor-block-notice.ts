@@ -1,19 +1,19 @@
-import { format } from "date-fns";
-import { escapeHtml } from "../escape";
+import { format } from "date-fns"
+import { escapeHtml } from "../escape"
 
 export type MentorBlockNoticeData = {
-  userName: string;
-  startDate: Date;
-  endDate: Date;
-  reason: string;
-  bonusDays: number;
-};
+  userName: string
+  startDate: Date
+  endDate: Date
+  reason: string
+  bonusDays: number
+}
 
 export function mentorBlockNoticeEmail(data: MentorBlockNoticeData) {
-  const startStr = format(data.startDate, "EEEE, MMMM d");
-  const endStr = format(data.endDate, "EEEE, MMMM d, yyyy");
-  const userName = escapeHtml(data.userName);
-  const reason = escapeHtml(data.reason);
+  const startStr = format(data.startDate, "EEEE, MMMM d")
+  const endStr = format(data.endDate, "EEEE, MMMM d, yyyy")
+  const userName = escapeHtml(data.userName)
+  const reason = escapeHtml(data.reason)
 
   return {
     subject: `Mentor unavailable ${startStr} - ${endStr}`,
@@ -51,5 +51,5 @@ export function mentorBlockNoticeEmail(data: MentorBlockNoticeData) {
 </body>
 </html>
     `.trim(),
-  };
+  }
 }

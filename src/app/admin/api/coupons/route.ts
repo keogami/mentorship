@@ -1,31 +1,31 @@
-import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
-import { db } from "@/lib/db";
-import { coupons } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
-import { validateBody, createCouponSchema } from "@/lib/validation";
+import { desc } from "drizzle-orm"
+import { NextResponse } from "next/server"
+import { requireAdmin } from "@/lib/admin/auth"
+import { db } from "@/lib/db"
+import { coupons } from "@/lib/db/schema"
+import { createCouponSchema, validateBody } from "@/lib/validation"
 
 export async function GET() {
-  const adminCheck = await requireAdmin();
-  if (!adminCheck.authorized) return adminCheck.response;
+  const adminCheck = await requireAdmin()
+  if (!adminCheck.authorized) return adminCheck.response
 
   const allCoupons = await db
     .select()
     .from(coupons)
-    .orderBy(desc(coupons.createdAt));
+    .orderBy(desc(coupons.createdAt))
 
-  return NextResponse.json({ coupons: allCoupons });
+  return NextResponse.json({ coupons: allCoupons })
 }
 
 export async function POST(request: Request) {
-  const adminCheck = await requireAdmin();
-  if (!adminCheck.authorized) return adminCheck.response;
+  const adminCheck = await requireAdmin()
+  if (!adminCheck.authorized) return adminCheck.response
 
-  const body = await request.json();
-  const parsed = validateBody(createCouponSchema, body);
-  if (!parsed.success) return parsed.response;
+  const body = await request.json()
+  const parsed = validateBody(createCouponSchema, body)
+  if (!parsed.success) return parsed.response
 
-  const { code, sessionsGranted, expiresAt, maxUses } = parsed.data;
+  const { code, sessionsGranted, expiresAt, maxUses } = parsed.data
 
   try {
     const [coupon] = await db
@@ -37,20 +37,17 @@ export async function POST(request: Request) {
         maxUses: maxUses ?? null,
         active: false, // Coupons are inactive by default
       })
-      .returning();
+      .returning()
 
-    return NextResponse.json({ coupon }, { status: 201 });
+    return NextResponse.json({ coupon }, { status: 201 })
   } catch (err) {
     // Handle unique constraint violation
-    if (
-      err instanceof Error &&
-      err.message.includes("unique")
-    ) {
+    if (err instanceof Error && err.message.includes("unique")) {
       return NextResponse.json(
         { error: "Coupon code already exists" },
         { status: 409 }
-      );
+      )
     }
-    throw err;
+    throw err
   }
 }

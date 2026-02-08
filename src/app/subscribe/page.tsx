@@ -1,18 +1,18 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { users, subscriptions } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { AuthGate } from "@/components/auth/auth-gate";
-import { PlanSelection } from "@/components/subscribe";
+import { and, eq } from "drizzle-orm"
+import Link from "next/link"
+import { redirect } from "next/navigation"
+import { auth } from "@/auth"
+import { AuthGate } from "@/components/auth/auth-gate"
+import { PlanSelection } from "@/components/subscribe"
+import { db } from "@/lib/db"
+import { subscriptions, users } from "@/lib/db/schema"
 
 export default async function SubscribePage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string }>;
+  searchParams: Promise<{ callbackUrl?: string }>
 }) {
-  const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+  const razorpayKeyId = process.env.RAZORPAY_KEY_ID
 
   if (!razorpayKeyId) {
     return (
@@ -21,23 +21,24 @@ export default async function SubscribePage({
           <h1 className="text-3xl font-bold">Subscribe to Mentorship</h1>
           <div className="rounded-lg border p-6 bg-muted/50">
             <p className="text-sm text-muted-foreground">
-              Payment system is not configured. Please contact the administrator.
+              Payment system is not configured. Please contact the
+              administrator.
             </p>
           </div>
         </div>
       </div>
-    );
+    )
   }
 
-  const { callbackUrl } = await searchParams;
+  const { callbackUrl } = await searchParams
 
   // Check if user is logged in and already has an active subscription
-  const session = await auth();
+  const session = await auth()
   if (session?.user?.email) {
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.email, session.user.email));
+      .where(eq(users.email, session.user.email))
 
     if (user) {
       const [activeSub] = await db
@@ -48,10 +49,10 @@ export default async function SubscribePage({
             eq(subscriptions.userId, user.id),
             eq(subscriptions.status, "active")
           )
-        );
+        )
 
       if (activeSub) {
-        redirect("/settings");
+        redirect("/settings")
       }
     }
   }
@@ -83,5 +84,5 @@ export default async function SubscribePage({
         </div>
       </AuthGate>
     </div>
-  );
+  )
 }

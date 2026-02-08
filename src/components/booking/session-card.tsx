@@ -1,11 +1,7 @@
-"use client";
+"use client"
 
-import { format, parseISO, differenceInHours } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
-import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { differenceInHours, format, parseISO } from "date-fns"
+import { toZonedTime } from "date-fns-tz"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,33 +11,37 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { MENTOR_CONFIG } from "@/lib/constants";
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { MENTOR_CONFIG } from "@/lib/constants"
+import { cn } from "@/lib/utils"
 
 type SessionStatus =
   | "scheduled"
   | "completed"
   | "cancelled_by_user"
   | "cancelled_by_mentor"
-  | "no_show";
+  | "no_show"
 
 type Session = {
-  id: string;
-  scheduledAt: string | Date;
-  durationMinutes: number;
-  status: SessionStatus;
-  meetLink?: string | null;
-  cancelledAt?: string | Date | null;
-  lateCancel: boolean;
-  createdAt: string | Date;
-};
+  id: string
+  scheduledAt: string | Date
+  durationMinutes: number
+  status: SessionStatus
+  meetLink?: string | null
+  cancelledAt?: string | Date | null
+  lateCancel: boolean
+  createdAt: string | Date
+}
 
 type SessionCardProps = {
-  session: Session;
-  onCancel?: (sessionId: string) => Promise<void>;
-  isCancelling?: boolean;
-  showCancelWarning?: boolean;
-};
+  session: Session
+  onCancel?: (sessionId: string) => Promise<void>
+  isCancelling?: boolean
+  showCancelWarning?: boolean
+}
 
 const statusLabels: Record<SessionStatus, string> = {
   scheduled: "Scheduled",
@@ -49,27 +49,30 @@ const statusLabels: Record<SessionStatus, string> = {
   cancelled_by_user: "Cancelled",
   cancelled_by_mentor: "Cancelled by mentor",
   no_show: "No show",
-};
+}
 
 const statusColors: Record<SessionStatus, string> = {
   scheduled: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  completed: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  cancelled_by_user: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
-  cancelled_by_mentor: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
+  completed:
+    "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  cancelled_by_user:
+    "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+  cancelled_by_mentor:
+    "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
   no_show: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-};
+}
 
 function canCancelSession(scheduledAt: Date): {
-  canCancel: boolean;
-  hoursRemaining: number;
-  willGetCredit: boolean;
+  canCancel: boolean
+  hoursRemaining: number
+  willGetCredit: boolean
 } {
-  const now = new Date();
-  const hoursRemaining = differenceInHours(scheduledAt, now);
-  const canCancel = hoursRemaining > 0;
-  const willGetCredit = hoursRemaining >= MENTOR_CONFIG.cancellationNoticeHours;
+  const now = new Date()
+  const hoursRemaining = differenceInHours(scheduledAt, now)
+  const canCancel = hoursRemaining > 0
+  const willGetCredit = hoursRemaining >= MENTOR_CONFIG.cancellationNoticeHours
 
-  return { canCancel, hoursRemaining, willGetCredit };
+  return { canCancel, hoursRemaining, willGetCredit }
 }
 
 export function SessionCard({
@@ -81,11 +84,11 @@ export function SessionCard({
   const scheduledAt =
     typeof session.scheduledAt === "string"
       ? parseISO(session.scheduledAt)
-      : session.scheduledAt;
+      : session.scheduledAt
 
-  const istTime = toZonedTime(scheduledAt, "Asia/Kolkata");
-  const isUpcoming = session.status === "scheduled";
-  const cancelInfo = isUpcoming ? canCancelSession(scheduledAt) : null;
+  const istTime = toZonedTime(scheduledAt, "Asia/Kolkata")
+  const isUpcoming = session.status === "scheduled"
+  const cancelInfo = isUpcoming ? canCancelSession(scheduledAt) : null
 
   return (
     <Card className={cn(!isUpcoming && "opacity-75")}>
@@ -172,7 +175,9 @@ export function SessionCard({
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Cancellation Unavailable</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      Cancellation Unavailable
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
                       Sessions can only be cancelled before the scheduled start
                       time. Once the session time has passed, cancellation is no
@@ -189,5 +194,5 @@ export function SessionCard({
         )}
       </CardContent>
     </Card>
-  );
+  )
 }

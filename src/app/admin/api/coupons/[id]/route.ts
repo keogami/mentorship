@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
-import { db } from "@/lib/db";
-import { coupons, couponRedemptions, users } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
-import { z } from "zod";
+import { desc, eq } from "drizzle-orm"
+import { NextResponse } from "next/server"
+import { z } from "zod"
+import { requireAdmin } from "@/lib/admin/auth"
+import { db } from "@/lib/db"
+import { couponRedemptions, coupons, users } from "@/lib/db/schema"
 
 const updateCouponSchema = z
   .object({
@@ -28,21 +28,21 @@ const updateCouponSchema = z
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided",
-  });
+  })
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminCheck = await requireAdmin();
-  if (!adminCheck.authorized) return adminCheck.response;
+  const adminCheck = await requireAdmin()
+  if (!adminCheck.authorized) return adminCheck.response
 
-  const { id } = await params;
+  const { id } = await params
 
   // Find coupon
-  const [coupon] = await db.select().from(coupons).where(eq(coupons.id, id));
+  const [coupon] = await db.select().from(coupons).where(eq(coupons.id, id))
   if (!coupon) {
-    return NextResponse.json({ error: "Coupon not found" }, { status: 404 });
+    return NextResponse.json({ error: "Coupon not found" }, { status: 404 })
   }
 
   // Get redemption history with user info
@@ -57,66 +57,63 @@ export async function GET(
     .from(couponRedemptions)
     .innerJoin(users, eq(couponRedemptions.userId, users.id))
     .where(eq(couponRedemptions.couponId, id))
-    .orderBy(desc(couponRedemptions.redeemedAt));
+    .orderBy(desc(couponRedemptions.redeemedAt))
 
-  return NextResponse.json({ coupon, redemptions });
+  return NextResponse.json({ coupon, redemptions })
 }
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminCheck = await requireAdmin();
-  if (!adminCheck.authorized) return adminCheck.response;
+  const adminCheck = await requireAdmin()
+  if (!adminCheck.authorized) return adminCheck.response
 
-  const { id } = await params;
-  const body = await request.json();
+  const { id } = await params
+  const body = await request.json()
 
   // Validate with Zod
-  const parsed = updateCouponSchema.safeParse(body);
+  const parsed = updateCouponSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0].message },
       { status: 400 }
-    );
+    )
   }
 
   // Find existing coupon
-  const [existing] = await db.select().from(coupons).where(eq(coupons.id, id));
+  const [existing] = await db.select().from(coupons).where(eq(coupons.id, id))
   if (!existing) {
-    return NextResponse.json({ error: "Coupon not found" }, { status: 404 });
+    return NextResponse.json({ error: "Coupon not found" }, { status: 404 })
   }
 
   // Build update object from validated fields
-  const { code, sessionsGranted, maxUses, expiresAt, active } = parsed.data;
-  const updates: Partial<typeof coupons.$inferInsert> = {};
+  const { code, sessionsGranted, maxUses, expiresAt, active } = parsed.data
+  const updates: Partial<typeof coupons.$inferInsert> = {}
 
-  if (code !== undefined) updates.code = code;
-  if (sessionsGranted !== undefined) updates.sessionsGranted = sessionsGranted;
-  if (maxUses !== undefined) updates.maxUses = maxUses;
+  if (code !== undefined) updates.code = code
+  if (sessionsGranted !== undefined) updates.sessionsGranted = sessionsGranted
+  if (maxUses !== undefined) updates.maxUses = maxUses
   if (expiresAt !== undefined)
-    updates.expiresAt = expiresAt ? new Date(expiresAt) : null;
-  if (active !== undefined) updates.active = active;
+    updates.expiresAt = expiresAt ? new Date(expiresAt) : null
+  if (active !== undefined) updates.active = active
 
   try {
     const [updated] = await db
       .update(coupons)
       .set(updates)
       .where(eq(coupons.id, id))
-      .returning();
+      .returning()
 
-    return NextResponse.json({ coupon: updated });
+    return NextResponse.json({ coupon: updated })
   } catch (error: unknown) {
-    if (
-      error instanceof Error &&
-      error.message.includes("unique")
-    ) {
+    if (error instanceof Error && error.message.includes("unique")) {
       return NextResponse.json(
         { error: "Coupon code already exists" },
         { status: 409 }
-      );
+      )
     }
-    throw error;
+    throw error
   }
 }
 
@@ -124,15 +121,15 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminCheck = await requireAdmin();
-  if (!adminCheck.authorized) return adminCheck.response;
+  const adminCheck = await requireAdmin()
+  if (!adminCheck.authorized) return adminCheck.response
 
-  const { id } = await params;
+  const { id } = await params
 
   // Check if coupon exists
-  const [existing] = await db.select().from(coupons).where(eq(coupons.id, id));
+  const [existing] = await db.select().from(coupons).where(eq(coupons.id, id))
   if (!existing) {
-    return NextResponse.json({ error: "Coupon not found" }, { status: 404 });
+    return NextResponse.json({ error: "Coupon not found" }, { status: 404 })
   }
 
   // Check if coupon has redemption history
@@ -140,17 +137,20 @@ export async function DELETE(
     .select({ id: couponRedemptions.id })
     .from(couponRedemptions)
     .where(eq(couponRedemptions.couponId, id))
-    .limit(1);
+    .limit(1)
 
   if (redemption) {
     return NextResponse.json(
-      { error: "Cannot delete coupon with redemption history. Deactivate it instead." },
+      {
+        error:
+          "Cannot delete coupon with redemption history. Deactivate it instead.",
+      },
       { status: 400 }
-    );
+    )
   }
 
   // Delete coupon
-  await db.delete(coupons).where(eq(coupons.id, id));
+  await db.delete(coupons).where(eq(coupons.id, id))
 
-  return NextResponse.json({ deleted: true });
+  return NextResponse.json({ deleted: true })
 }

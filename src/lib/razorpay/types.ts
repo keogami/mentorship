@@ -1,49 +1,51 @@
+// TODO: razorpay already has typescript definitions: https://github.com/razorpay/razorpay-node/blob/master/lib/razorpay.d.ts
+// remove all this unnecessary typings in favor of the official one
 export type RazorpayOptions = {
-  key: string;
-  subscription_id: string;
-  name: string;
-  description: string;
-  handler: (response: RazorpayResponse) => void;
+  key: string
+  subscription_id: string
+  name: string
+  description: string
+  handler: (response: RazorpayResponse) => void
   prefill?: {
-    name?: string;
-    email?: string;
-  };
+    name?: string
+    email?: string
+  }
   theme?: {
-    color?: string;
-  };
+    color?: string
+  }
   modal?: {
-    ondismiss?: () => void;
-  };
-};
+    ondismiss?: () => void
+  }
+}
 
 export type RazorpayInstance = {
-  open: () => void;
-  close: () => void;
-};
+  open: () => void
+  close: () => void
+}
 
 export type RazorpayResponse = {
-  razorpay_payment_id: string;
-  razorpay_subscription_id: string;
-  razorpay_signature: string;
-};
+  razorpay_payment_id: string
+  razorpay_subscription_id: string
+  razorpay_signature: string
+}
 
 declare global {
   interface Window {
-    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance
   }
 }
 
 export function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
     if (typeof window !== "undefined" && window.Razorpay) {
-      resolve(true);
-      return;
+      resolve(true)
+      return
     }
 
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
+    const script = document.createElement("script")
+    script.src = "https://checkout.razorpay.com/v1/checkout.js"
+    script.onload = () => resolve(true)
+    script.onerror = () => resolve(false)
+    document.body.appendChild(script)
+  })
 }

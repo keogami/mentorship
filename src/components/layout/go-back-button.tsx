@@ -1,35 +1,39 @@
-"use client";
+"use client"
 
-import { useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useCallback } from "react"
+import { Button } from "@/components/ui/button"
 
 function isInternalReferrer(): boolean {
-  if (!document.referrer) return false;
+  if (!document.referrer) return false
   try {
-    const referrerUrl = new URL(document.referrer);
-    return referrerUrl.host === window.location.host;
+    const referrerUrl = new URL(document.referrer)
+    return referrerUrl.host === window.location.host
   } catch {
-    return false;
+    return false
   }
 }
 
-export function GoBackButton({ fallback = "/dashboard" }: { fallback?: string }) {
-  const router = useRouter();
+export function GoBackButton({
+  fallback = "/dashboard",
+}: {
+  fallback?: string
+}) {
+  const router = useRouter()
 
   const handleBack = useCallback(() => {
     if (isInternalReferrer()) {
-      router.back();
+      router.back()
     } else {
-      router.push(fallback);
+      router.push(fallback)
     }
-  }, [router, fallback]);
+  }, [router, fallback])
 
   return (
     <Button variant="ghost" size="sm" onClick={handleBack}>
       <ArrowLeft className="h-4 w-4" />
       Back
     </Button>
-  );
+  )
 }
