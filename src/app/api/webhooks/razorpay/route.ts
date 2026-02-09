@@ -156,7 +156,7 @@ async function handleSubscriptionActivated(
       .where(eq(plans.id, subscription.planId))
 
     if (user && plan) {
-      const emailContent = subscriptionActivatedEmail({
+      const emailContent = await subscriptionActivatedEmail({
         userName: user.name,
         planName: plan.name,
         sessionsPerPeriod: plan.sessionsPerPeriod,
@@ -229,7 +229,7 @@ async function handleSubscriptionCharged(
       try {
         const mentorEmail = process.env.MENTOR_EMAIL
         if (mentorEmail) {
-          const emailContent = mentorAlertEmail({
+          const emailContent = await mentorAlertEmail({
             title: "Unknown Razorpay Plan ID",
             message:
               "A subscription was charged with a Razorpay plan_id that doesn't match any plan in the database. The subscription was renewed but the plan was NOT updated.",
@@ -346,7 +346,7 @@ async function handleSubscriptionCancelled(
       .where(eq(plans.id, subscription.planId))
 
     if (user && plan) {
-      const emailContent = subscriptionCancelledEmail({
+      const emailContent = await subscriptionCancelledEmail({
         userName: user.name,
         planName: plan.name,
       })

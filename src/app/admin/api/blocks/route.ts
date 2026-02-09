@@ -200,7 +200,7 @@ export async function POST(request: Request) {
 
         if (!user) return null
 
-        const emailContent = mentorBlockNoticeEmail({
+        const emailContent = await mentorBlockNoticeEmail({
           userName: user.name,
           startDate: start,
           endDate: end,

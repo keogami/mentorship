@@ -1,29 +1,28 @@
-import { google } from "googleapis"
+import nodemailer from "nodemailer"
 import { stripCrlf } from "./escape"
 
-let gmailInstance: ReturnType<typeof google.gmail> | null = null
+let transportInstance: nodemailer.Transporter | null = null
 
-function getGmail() {
-  if (!gmailInstance) {
-    const keyBase64 = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
-    if (!keyBase64) {
-      throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY is not set")
+function getTransport() {
+  if (!transportInstance) {
+    const host = process.env.SMTP_HOST || "smtp-relay.gmail.com"
+    const port = Number(process.env.SMTP_PORT || "465")
+    const user = process.env.SMTP_USER
+    const pass = process.env.SMTP_PASS
+
+    if (!user || !pass) {
+      throw new Error("SMTP_USER and SMTP_PASS must be set")
     }
 
-    const keyJson = Buffer.from(keyBase64, "base64").toString("utf-8")
-    const credentials = JSON.parse(keyJson)
-
-    const auth = new google.auth.JWT({
-      email: credentials.client_email,
-      key: credentials.private_key,
-      scopes: ["https://www.googleapis.com/auth/gmail.send"],
-      subject: process.env.MENTOR_EMAIL,
+    transportInstance = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
     })
-
-    gmailInstance = google.gmail({ version: "v1", auth })
   }
 
-  return gmailInstance
+  return transportInstance
 }
 
 export type EmailMessage = {
@@ -32,49 +31,23 @@ export type EmailMessage = {
   html: string
 }
 
-// DEFERRED: migrate to React Email for templating when doing an email overhaul
 export async function sendEmail(message: EmailMessage): Promise<void> {
-  const gmail = getGmail()
+  const transport = getTransport()
   const mentorEmail = process.env.MENTOR_EMAIL
 
   if (!mentorEmail) {
     throw new Error("MENTOR_EMAIL is not set")
   }
 
-  // Strip CRLF from header values to prevent header injection
-  const safeTo = stripCrlf(message.to)
-  const safeSubject = stripCrlf(message.subject)
-  const safeFrom = stripCrlf(mentorEmail)
-
-  // Create raw email message
-  const email = [
-    `From: Mentorship <${safeFrom}>`,
-    `To: ${safeTo}`,
-    `Subject: ${safeSubject}`,
-    `MIME-Version: 1.0`,
-    `Content-Type: text/html; charset=utf-8`,
-    "",
-    message.html,
-  ].join("\r\n")
-
-  // Base64 encode the email
-  const encodedMessage = Buffer.from(email)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "")
-
-  await gmail.users.messages.send({
-    userId: "me",
-    requestBody: {
-      raw: encodedMessage,
-    },
+  await transport.sendMail({
+    from: `Mentorship <${stripCrlf(mentorEmail)}>`,
+    to: stripCrlf(message.to),
+    subject: stripCrlf(message.subject),
+    html: message.html,
   })
 }
 
 export async function sendBulkEmails(messages: EmailMessage[]): Promise<void> {
-  // Send emails in parallel, but with a limit to avoid rate limiting
-  // DEFERRED: make batch size configurable via admin panel (needs DB schema + UI)
   const batchSize = 5
   for (let i = 0; i < messages.length; i += batchSize) {
     const batch = messages.slice(i, i + batchSize)

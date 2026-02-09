@@ -129,7 +129,7 @@ export async function POST(
 
   // 9. Send termination email to user
   try {
-    const emailContent = mentorCancelledUserEmail({
+    const emailContent = await mentorCancelledUserEmail({
       userName: user.name,
       reason,
       refundAmount: refundAmountInr,
