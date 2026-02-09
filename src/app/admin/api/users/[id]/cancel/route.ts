@@ -53,9 +53,12 @@ export async function POST(
 
   const { subscription, plan } = subWithPlan
 
-  // 3. Calculate pro-rata refund
-  const unusedSessions =
-    plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod
+  // 3. Calculate pro-rata refund (carry-over sessions are bonus, not paid — exclude from refund)
+  const unusedSessions = Math.max(
+    0,
+    plan.sessionsPerPeriod -
+      Math.max(0, subscription.sessionsUsedThisPeriod - subscription.carryOverSessions)
+  )
   const costPerSession = Math.floor(plan.priceInr / plan.sessionsPerPeriod)
   const refundAmountInr = Math.max(0, unusedSessions * costPerSession)
   const refundAmountPaise = refundAmountInr * 100

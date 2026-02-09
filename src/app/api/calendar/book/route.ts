@@ -91,6 +91,7 @@ export async function POST(request: Request) {
         currentPeriodStart: subscriptions.currentPeriodStart,
         currentPeriodEnd: subscriptions.currentPeriodEnd,
         sessionsUsedThisPeriod: subscriptions.sessionsUsedThisPeriod,
+        carryOverSessions: subscriptions.carryOverSessions,
         planId: plans.id,
         planName: plans.name,
         planSlug: plans.slug,
@@ -111,6 +112,7 @@ export async function POST(request: Request) {
     let subscription: {
       id: string
       sessionsUsedThisPeriod: number
+      carryOverSessions: number
       currentPeriodEnd: Date
       plan: {
         id: string
@@ -132,6 +134,7 @@ export async function POST(request: Request) {
       subscription = {
         id: subRow.id,
         sessionsUsedThisPeriod: subRow.sessionsUsedThisPeriod,
+        carryOverSessions: subRow.carryOverSessions,
         currentPeriodEnd: subRow.currentPeriodEnd,
         plan: {
           id: subRow.planId,
@@ -175,7 +178,8 @@ export async function POST(request: Request) {
       )
       if (new Date() <= effectiveEnd) {
         subRemaining =
-          subscription.plan.sessionsPerPeriod -
+          subscription.plan.sessionsPerPeriod +
+          subscription.carryOverSessions -
           subscription.sessionsUsedThisPeriod
       }
     }
@@ -380,7 +384,8 @@ export async function POST(request: Request) {
   }
 
   const subRemainingAfter = result.subscription
-    ? result.subscription.plan.sessionsPerPeriod -
+    ? result.subscription.plan.sessionsPerPeriod +
+      result.subscription.carryOverSessions -
       result.subscription.sessionsUsedThisPeriod -
       (result.debitSource === "subscription" ? 1 : 0)
     : 0

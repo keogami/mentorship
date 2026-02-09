@@ -60,7 +60,9 @@ export default async function SessionsPage() {
 
   const hasActiveSubscription = subscription?.status === "active"
   const subRemaining = hasActiveSubscription
-    ? subscription.plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod
+    ? subscription.plan.sessionsPerPeriod +
+      subscription.carryOverSessions -
+      subscription.sessionsUsedThisPeriod
     : 0
   const packRemaining = activePack?.sessionsRemaining ?? 0
   const sessionsRemaining = subRemaining + packRemaining

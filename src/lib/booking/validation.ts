@@ -52,6 +52,7 @@ export type SubscriptionWithPlan = {
   currentPeriodStart: Date
   currentPeriodEnd: Date
   sessionsUsedThisPeriod: number
+  carryOverSessions: number
   plan: {
     id: string
     name: string
@@ -76,6 +77,7 @@ export async function getUserSubscriptionWithPlan(
       currentPeriodStart: subscriptions.currentPeriodStart,
       currentPeriodEnd: subscriptions.currentPeriodEnd,
       sessionsUsedThisPeriod: subscriptions.sessionsUsedThisPeriod,
+      carryOverSessions: subscriptions.carryOverSessions,
       planId: plans.id,
       planName: plans.name,
       planSlug: plans.slug,
@@ -108,6 +110,7 @@ export async function getUserSubscriptionWithPlan(
     currentPeriodStart: result.currentPeriodStart,
     currentPeriodEnd: result.currentPeriodEnd,
     sessionsUsedThisPeriod: result.sessionsUsedThisPeriod,
+    carryOverSessions: result.carryOverSessions,
     plan: {
       id: result.planId,
       name: result.planName,
@@ -224,7 +227,9 @@ export function determineDebitSource(
 ): "subscription" | "pack" {
   if (subscription) {
     const subRemaining =
-      subscription.plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod
+      subscription.plan.sessionsPerPeriod +
+      subscription.carryOverSessions -
+      subscription.sessionsUsedThisPeriod
 
     if (subRemaining > 0) {
       const istDate = toZonedTime(scheduledAt, IST_TIMEZONE)
@@ -284,7 +289,8 @@ export async function validateBooking(
     )
     if (new Date() <= effectiveEnd) {
       subRemaining =
-        subscription.plan.sessionsPerPeriod -
+        subscription.plan.sessionsPerPeriod +
+        subscription.carryOverSessions -
         subscription.sessionsUsedThisPeriod
     }
   }

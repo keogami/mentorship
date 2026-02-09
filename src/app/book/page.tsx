@@ -47,7 +47,8 @@ export default async function BookPage() {
         hasActiveSubscription = true
         weekendAccess = subscription.plan.weekendAccess
         sessionsRemaining =
-          subscription.plan.sessionsPerPeriod -
+          subscription.plan.sessionsPerPeriod +
+          subscription.carryOverSessions -
           subscription.sessionsUsedThisPeriod
       }
 

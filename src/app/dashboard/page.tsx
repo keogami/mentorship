@@ -222,7 +222,9 @@ export default async function DashboardPage() {
   effectiveEndDate.setDate(effectiveEndDate.getDate() + bonusDays)
 
   const sessionsRemaining =
-    plan.sessionsPerPeriod - subscription.sessionsUsedThisPeriod
+    plan.sessionsPerPeriod +
+    subscription.carryOverSessions -
+    subscription.sessionsUsedThisPeriod
   const period = plan.period === "weekly" ? "week" : "month"
 
   return (
@@ -253,11 +255,16 @@ export default async function DashboardPage() {
                 <p className="text-sm text-muted-foreground">Sessions Used</p>
                 <p className="text-2xl font-bold">
                   {subscription.sessionsUsedThisPeriod} /{" "}
-                  {plan.sessionsPerPeriod}
+                  {plan.sessionsPerPeriod + subscription.carryOverSessions}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {sessionsRemaining} remaining this {period}
                 </p>
+                {subscription.carryOverSessions > 0 && (
+                  <p className="text-sm text-green-600 dark:text-green-400">
+                    includes {subscription.carryOverSessions} carried over
+                  </p>
+                )}
               </div>
               <div className="rounded-lg border p-4">
                 <p className="text-sm text-muted-foreground">Current Period</p>

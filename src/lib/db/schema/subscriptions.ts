@@ -26,6 +26,7 @@ export const subscriptions = pgTable("subscriptions", {
   sessionsUsedThisPeriod: integer("sessions_used_this_period")
     .default(0)
     .notNull(),
+  carryOverSessions: integer("carry_over_sessions").default(0).notNull(),
   pendingPlanChangeId: text("pending_plan_change_id").references(
     () => plans.id
   ),

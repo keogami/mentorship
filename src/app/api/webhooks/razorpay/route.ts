@@ -1,9 +1,10 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, sum } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import {
   plans,
   sessions,
+  subscriptionCredits,
   subscriptions,
   users,
   webhookEvents,
@@ -117,20 +118,30 @@ async function handleSubscriptionActivated(
   const periodStart = new Date(razorpaySubscription.current_start * 1000)
   const periodEnd = new Date(razorpaySubscription.current_end * 1000)
 
+  // Compute carry-over sessions from bonus days
+  const carryOver = await computeCarryOver(subscription)
+
   await db
     .update(subscriptions)
     .set({
       status: "active",
       currentPeriodStart: periodStart,
       currentPeriodEnd: periodEnd,
-      // DEFERRED: verify credited days are preserved correctly on renewal (needs test cases)
       sessionsUsedThisPeriod: 0,
+      carryOverSessions: carryOver,
       razorpayCustomerId: razorpaySubscription.customer_id,
       ...(razorpayPayment?.id && {
         latestPaymentId: razorpayPayment.id,
       }),
     })
     .where(eq(subscriptions.id, subscription.id))
+
+  // Delete consumed credits
+  if (carryOver > 0) {
+    await db
+      .delete(subscriptionCredits)
+      .where(eq(subscriptionCredits.subscriptionId, subscription.id))
+  }
 
   // Send welcome email
   try {
@@ -237,6 +248,9 @@ async function handleSubscriptionCharged(
     }
   }
 
+  // Compute carry-over sessions from bonus days before resetting
+  const carryOver = await computeCarryOver(subscription)
+
   // Renewal: reset session counter and update period (with plan change if applicable)
   await db
     .update(subscriptions)
@@ -244,6 +258,7 @@ async function handleSubscriptionCharged(
       currentPeriodStart: periodStart,
       currentPeriodEnd: periodEnd,
       sessionsUsedThisPeriod: 0,
+      carryOverSessions: carryOver,
       status: "active",
       razorpayCustomerId: razorpaySubscription.customer_id,
       ...paymentUpdate,
@@ -251,7 +266,14 @@ async function handleSubscriptionCharged(
     })
     .where(eq(subscriptions.id, subscription.id))
 
-  console.log(`Subscription renewed: ${subscription.id}`)
+  // Delete consumed credits
+  if (carryOver > 0) {
+    await db
+      .delete(subscriptionCredits)
+      .where(eq(subscriptionCredits.subscriptionId, subscription.id))
+  }
+
+  console.log(`Subscription renewed: ${subscription.id} (carry-over: ${carryOver})`)
 }
 
 async function handleSubscriptionCancelled(
@@ -395,4 +417,41 @@ async function handleSubscriptionResumed(
     .where(eq(subscriptions.id, subscription.id))
 
   console.log(`Subscription resumed: ${subscription.id}`)
+}
+
+/**
+ * Compute carry-over sessions for a subscription being renewed.
+ * Carry-over = min(remaining sessions, bonus days from credits).
+ * Returns 0 if no bonus days exist.
+ */
+async function computeCarryOver(subscription: {
+  id: string
+  sessionsUsedThisPeriod: number
+  carryOverSessions: number
+  planId: string
+}): Promise<number> {
+  // Get bonus days from subscription credits
+  const [creditsResult] = await db
+    .select({ totalDays: sum(subscriptionCredits.days) })
+    .from(subscriptionCredits)
+    .where(eq(subscriptionCredits.subscriptionId, subscription.id))
+
+  const bonusDays = Number(creditsResult?.totalDays) || 0
+  if (bonusDays <= 0) return 0
+
+  // Get plan to know sessionsPerPeriod
+  const [plan] = await db
+    .select({ sessionsPerPeriod: plans.sessionsPerPeriod })
+    .from(plans)
+    .where(eq(plans.id, subscription.planId))
+
+  if (!plan) return 0
+
+  const totalAvailable =
+    plan.sessionsPerPeriod +
+    subscription.carryOverSessions -
+    subscription.sessionsUsedThisPeriod
+  const remaining = Math.max(0, totalAvailable)
+
+  return Math.min(remaining, bonusDays)
 }
