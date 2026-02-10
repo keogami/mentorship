@@ -50,6 +50,7 @@ const testimonials: Testimoninial[] = [
   },
   {
     name: "Garima Jain",
+    linkedIn: "https://www.linkedin.com/in/garima-jain-250346218",
     quote:
       "keogami's mentorship gave me the structure I needed to grow as a developer. His patient guidance and clear explanations made even the toughest concepts feel approachable.",
   },
