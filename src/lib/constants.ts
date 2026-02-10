@@ -1,6 +1,6 @@
 export const SITE_CONFIG = {
-  name: "Mentorship",
-  description: "1:1 Programming Mentorship Platform",
+  name: "keogami's mentorship",
+  description: "1:1 programming mentorship",
   url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
 } as const
 

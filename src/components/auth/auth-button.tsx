@@ -47,7 +47,7 @@ export function AuthButton() {
 
   return (
     <Button variant="ghost" asChild>
-      <Link href="/subscribe?callbackUrl=%2Fdashboard">Sign In</Link>
+      <Link href="/signin?callbackUrl=%2Fdashboard">Sign In</Link>
     </Button>
   )
 }

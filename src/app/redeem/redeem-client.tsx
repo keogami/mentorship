@@ -70,7 +70,7 @@ export function RedeemClient({ initialCode }: { initialCode?: string }) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Coupon Redeemed</CardTitle>
+          <CardTitle>redeemed!</CardTitle>
           <CardDescription>
             {result.sessionsAdded} session
             {result.sessionsAdded !== 1 ? "s" : ""} added to your pack
@@ -106,7 +106,7 @@ export function RedeemClient({ initialCode }: { initialCode?: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Redeem a Coupon</CardTitle>
+        <CardTitle>redeem</CardTitle>
         <CardDescription>
           Enter your coupon code to get session credits
         </CardDescription>

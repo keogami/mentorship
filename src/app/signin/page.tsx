@@ -21,9 +21,9 @@ export default async function SignInPage({
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold">Sign in to continue</h2>
+        <h2 className="cli-prompt text-2xl font-bold">mentorship --login</h2>
         <p className="text-muted-foreground">
-          Sign in with your GitHub or Google account to get started.
+          authenticate with a provider to continue
         </p>
       </div>
       <SignInOptions callbackUrl={safeCallbackUrl} />

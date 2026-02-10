@@ -9,6 +9,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export default function SettingsError({
   error,
@@ -25,15 +30,20 @@ export default function SettingsError({
     <div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4">
       <Card className="max-w-md">
         <CardHeader>
-          <CardTitle>Failed to load settings</CardTitle>
+          <CardTitle>error: failed to load settings</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            We couldn&apos;t load your settings. Please try again.
+            something went wrong. please try again.
           </p>
         </CardContent>
         <CardFooter>
-          <Button onClick={reset}>Try Again</Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={reset}>retry</Button>
+            </TooltipTrigger>
+            <TooltipContent>Try again</TooltipContent>
+          </Tooltip>
         </CardFooter>
       </Card>
     </div>

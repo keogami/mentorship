@@ -75,9 +75,9 @@ export default async function SessionsPage() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Sessions</h1>
+            <h1 className="cli-prompt text-3xl font-bold">sessions</h1>
             <p className="text-muted-foreground">
-              View and manage your mentorship sessions
+              view and manage your mentorship sessions
             </p>
           </div>
         </div>

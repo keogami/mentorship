@@ -67,22 +67,22 @@ export async function mentorBlockNoticeEmail(data: MentorBlockNoticeData) {
 }
 
 const heading = {
-  color: "#111",
+  color: "#cdd6f4",
   marginBottom: "24px",
 }
 
 const warningBox = {
-  background: "#fef3cd",
-  border: "1px solid #ffc107",
-  borderRadius: "8px",
+  background: "#313244",
+  border: "1px solid #f9e2af",
+  borderRadius: "4px",
   padding: "16px",
   margin: "24px 0",
 }
 
 const successBox = {
-  background: "#d4edda",
-  border: "1px solid #28a745",
-  borderRadius: "8px",
+  background: "#313244",
+  border: "1px solid #a6e3a1",
+  borderRadius: "4px",
   padding: "16px",
   margin: "24px 0",
 }

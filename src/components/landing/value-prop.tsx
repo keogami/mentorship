@@ -31,8 +31,8 @@ const features = [
 export function ValuePropSection() {
   return (
     <section className="container mx-auto px-4 py-16 md:py-24">
-      <h2 className="mb-12 text-center text-3xl font-bold">
-        Why Choose 1:1 Mentorship?
+      <h2 className="cli-prompt mb-12 text-center text-3xl font-bold">
+        why mentorship
       </h2>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {features.map((feature) => (

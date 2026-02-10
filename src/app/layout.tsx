@@ -4,6 +4,7 @@ import { SessionProvider } from "@/components/auth/session-provider"
 import { Footer } from "@/components/layout/footer"
 import { Header } from "@/components/layout/header"
 import { ThemeProvider } from "@/components/theme-provider"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -17,9 +18,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "1:1 Programming Mentorship | Daily Sessions",
+  title: "keogami's mentorship | 1:1 programming sessions",
   description:
-    "Personal programming mentorship with daily 1:1 sessions. Get unstuck faster, build real projects, and accelerate your career.",
+    "Personal 1:1 programming mentorship. Book daily sessions, get unstuck faster, build real projects.",
 }
 
 export default function RootLayout({
@@ -30,18 +31,20 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} font-mono antialiased`}
       >
         <SessionProvider>
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
+            defaultTheme="dark"
             enableSystem
             disableTransitionOnChange
           >
-            <Header />
-            <main>{children}</main>
-            <Footer />
+            <TooltipProvider>
+              <Header />
+              <main>{children}</main>
+              <Footer />
+            </TooltipProvider>
           </ThemeProvider>
         </SessionProvider>
       </body>

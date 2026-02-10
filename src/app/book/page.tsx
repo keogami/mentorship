@@ -80,9 +80,9 @@ export default async function BookPage() {
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Book a Session</h1>
+            <h1 className="cli-prompt text-3xl font-bold">book</h1>
             <p className="text-muted-foreground">
-              Select an available time slot to schedule your mentorship session
+              select an available time slot to schedule your session
             </p>
           </div>
           <Button variant="outline" asChild>

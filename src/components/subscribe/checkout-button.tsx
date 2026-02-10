@@ -1,5 +1,6 @@
 "use client"
 
+import { useTheme } from "next-themes"
 import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { loadRazorpayScript } from "@/lib/razorpay/types"
@@ -35,6 +36,7 @@ export function CheckoutButton({
   variant = "default",
   size = "default",
 }: CheckoutButtonProps) {
+  const { resolvedTheme } = useTheme()
   const [isLoading, setIsLoading] = useState(false)
   const [scriptLoaded, setScriptLoaded] = useState(false)
 
@@ -67,7 +69,7 @@ export function CheckoutButton({
       const options = {
         key: razorpayKeyId,
         subscription_id: subscriptionId,
-        name: "Mentorship",
+        name: "keogami's mentorship",
         description: `${planName} Subscription`,
         prefill: userEmail ? { email: userEmail } : undefined,
         handler: () => {
@@ -75,7 +77,14 @@ export function CheckoutButton({
           window.location.href = "/dashboard"
         },
         theme: {
-          color: "#000000",
+          color: "#1e1e2e",
+        },
+        display: {
+          widget: {
+            main: {
+              isDarkMode: resolvedTheme === "dark",
+            },
+          },
         },
         modal: {
           ondismiss: () => {
@@ -92,7 +101,7 @@ export function CheckoutButton({
       onError?.(message)
       setIsLoading(false)
     }
-  }, [planId, planName, razorpayKeyId, userEmail, scriptLoaded, onSuccess, onError])
+  }, [planId, planName, razorpayKeyId, userEmail, scriptLoaded, resolvedTheme, onSuccess, onError])
 
   return (
     <Button

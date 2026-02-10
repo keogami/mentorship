@@ -100,9 +100,9 @@ export default async function SettingsPage() {
         <GoBackButton />
 
         <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
+          <h1 className="cli-prompt text-3xl font-bold">settings</h1>
           <p className="text-muted-foreground">
-            Manage your subscription and account
+            manage your subscription and account
           </p>
         </div>
 

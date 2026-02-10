@@ -1,5 +1,6 @@
 "use client"
 
+import { useTheme } from "next-themes"
 import { useCallback, useEffect, useState } from "react"
 import type { Plan } from "@/lib/db/types"
 import { loadRazorpayScript } from "@/lib/razorpay/types"
@@ -14,6 +15,7 @@ export function PlanSelection({
   razorpayKeyId,
   userEmail,
 }: PlanSelectionProps) {
+  const { resolvedTheme } = useTheme()
   const [plans, setPlans] = useState<Plan[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
@@ -73,14 +75,21 @@ export function PlanSelection({
         const options = {
           key: razorpayKeyId,
           subscription_id: subscriptionId,
-          name: "Mentorship",
+          name: "keogami's mentorship",
           description: `${plan?.name || "Plan"} Subscription`,
           prefill: userEmail ? { email: userEmail } : undefined,
           handler: () => {
             window.location.href = "/dashboard"
           },
           theme: {
-            color: "#000000",
+            color: "#1e1e2e",
+          },
+          display: {
+            widget: {
+              main: {
+                isDarkMode: resolvedTheme === "dark",
+              },
+            },
           },
           modal: {
             ondismiss: () => {
@@ -96,7 +105,7 @@ export function PlanSelection({
         setSelectedPlanId(null)
       }
     },
-    [plans, razorpayKeyId, userEmail, scriptLoaded]
+    [plans, razorpayKeyId, userEmail, scriptLoaded, resolvedTheme]
   )
 
   if (isLoading) {

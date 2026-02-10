@@ -365,7 +365,7 @@ export async function POST(request: Request) {
   let meetLink: string | null = null
   try {
     const calendarResult = await createCalendarEvent(
-      `Mentorship Session - ${user.name}`,
+      `keogami's mentorship - ${user.name}`,
       `50-minute mentorship session with ${user.name} (${user.email})`,
       scheduledAt,
       endTime,

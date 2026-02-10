@@ -15,7 +15,7 @@ function SubscriptionActivatedEmail(data: SubscriptionActivatedData) {
   return (
     <EmailLayout preview={`Your ${data.planName} plan is now active`}>
       <Heading as="h1" style={heading}>
-        Welcome to Mentorship!
+        Welcome to keogami&apos;s mentorship!
       </Heading>
 
       <Text>Hi {data.userName},</Text>
@@ -44,19 +44,19 @@ function SubscriptionActivatedEmail(data: SubscriptionActivatedData) {
 
 export async function subscriptionActivatedEmail(data: SubscriptionActivatedData) {
   return {
-    subject: `Welcome to Mentorship - Your ${data.planName} plan is now active`,
+    subject: `Welcome to keogami's mentorship - Your ${data.planName} plan is now active`,
     html: await render(<SubscriptionActivatedEmail {...data} />),
   }
 }
 
 const heading = {
-  color: "#111",
+  color: "#cdd6f4",
   marginBottom: "24px",
 }
 
 const infoBox = {
-  background: "#f5f5f5",
-  borderRadius: "8px",
+  background: "#313244",
+  borderRadius: "4px",
   padding: "16px",
   margin: "24px 0",
 }

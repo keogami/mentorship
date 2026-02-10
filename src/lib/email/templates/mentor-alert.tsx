@@ -14,7 +14,7 @@ function MentorAlertEmail(data: MentorAlertData) {
       preview={`[Alert] ${data.title}`}
       footer={
         <Text style={footerText}>
-          This is an automated alert from Mentorship. Check Vercel logs for more
+          This is an automated alert from keogami&apos;s mentorship. Check Vercel logs for more
           context.
         </Text>
       }
@@ -24,7 +24,7 @@ function MentorAlertEmail(data: MentorAlertData) {
       </Heading>
 
       <Section style={alertBox}>
-        <Text style={{ margin: 0, color: "#991b1b" }}>{data.message}</Text>
+        <Text style={{ margin: 0, color: "#f38ba8" }}>{data.message}</Text>
       </Section>
 
       {data.details && (
@@ -51,14 +51,14 @@ export async function mentorAlertEmail(data: MentorAlertData) {
 }
 
 const heading = {
-  color: "#111",
+  color: "#cdd6f4",
   marginBottom: "24px",
 }
 
 const alertBox = {
-  background: "#fef2f2",
-  border: "1px solid #fecaca",
-  borderRadius: "8px",
+  background: "#45475a",
+  border: "1px solid #f38ba8",
+  borderRadius: "4px",
   padding: "16px",
   margin: "24px 0",
 }
@@ -71,19 +71,19 @@ const table = {
 
 const labelCell = {
   padding: "8px 12px",
-  border: "1px solid #ddd",
+  border: "1px solid #45475a",
   fontWeight: "bold" as const,
-  background: "#f9f9f9",
+  background: "#313244",
   whiteSpace: "nowrap" as const,
 }
 
 const valueCell = {
   padding: "8px 12px",
-  border: "1px solid #ddd",
+  border: "1px solid #45475a",
   fontFamily: "monospace",
 }
 
 const footerText = {
-  color: "#666",
+  color: "#a6adc8",
   fontSize: "14px",
 }

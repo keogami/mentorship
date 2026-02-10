@@ -37,7 +37,7 @@ export function MobileNav({ isMentor }: MobileNavProps) {
       </SheetTrigger>
       <SheetContent side="right">
         <SheetHeader>
-          <SheetTitle>Mentorship</SheetTitle>
+          <SheetTitle>keogami&apos;s mentorship</SheetTitle>
         </SheetHeader>
         <nav className="flex flex-col gap-2 px-4">
           {session?.user ? (
@@ -127,7 +127,7 @@ export function MobileNav({ isMentor }: MobileNavProps) {
                 Sign In
               </Link>
               <Link href="/subscribe" onClick={() => setOpen(false)}>
-                <Button className="w-full min-h-[44px]">Enroll Now</Button>
+                <Button className="w-full min-h-[44px]">./enroll.sh</Button>
               </Link>
             </>
           )}

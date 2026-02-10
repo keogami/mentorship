@@ -8,6 +8,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { PLANS, type Plan } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 
@@ -41,7 +46,7 @@ function PlanCard({ plan }: { plan: Plan }) {
     >
       {plan.featured && (
         <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-          Best Value
+          recommended
         </Badge>
       )}
       <CardHeader className="text-center">
@@ -71,16 +76,23 @@ function PlanCard({ plan }: { plan: Plan }) {
         </ul>
       </CardContent>
       <CardFooter>
-        <Button
-          className="w-full"
-          size="lg"
-          variant={plan.featured ? "default" : "outline"}
-          asChild
-        >
-          <a href={`/subscribe?plan=${plan.slug}`}>
-            {plan.featured ? "Get Started" : "Choose Plan"}
-          </a>
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              className="w-full"
+              size="lg"
+              variant={plan.featured ? "default" : "outline"}
+              asChild
+            >
+              <a href={`/subscribe?plan=${plan.slug}`}>
+                {plan.featured ? "./subscribe.sh" : "select"}
+              </a>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {plan.featured ? "Subscribe to this plan" : "Choose this plan"}
+          </TooltipContent>
+        </Tooltip>
       </CardFooter>
     </Card>
   )
@@ -91,11 +103,11 @@ export function PricingSection() {
     <section id="pricing" className="container mx-auto px-4 py-16 md:py-24">
       <div className="mx-auto max-w-4xl">
         <div className="mb-12 text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Simple, transparent pricing
+          <h2 className="cli-prompt text-3xl font-bold tracking-tight sm:text-4xl">
+            pricing
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Choose the plan that fits your learning schedule
+            select a plan
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-3 md:items-center">

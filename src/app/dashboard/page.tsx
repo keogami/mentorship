@@ -126,8 +126,8 @@ export default async function DashboardPage() {
       <div className="container mx-auto px-4 py-16">
         <div className="mx-auto max-w-2xl space-y-6">
           <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {user.name}</p>
+            <h1 className="cli-prompt text-3xl font-bold">dashboard</h1>
+            <p className="text-muted-foreground">logged in as {user.name}</p>
           </div>
 
           {activePack && (
@@ -231,8 +231,8 @@ export default async function DashboardPage() {
     <div className="container mx-auto px-4 py-16">
       <div className="mx-auto max-w-2xl space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, {user.name}</p>
+          <h1 className="cli-prompt text-3xl font-bold">dashboard</h1>
+          <p className="text-muted-foreground">logged in as {user.name}</p>
         </div>
 
         <Card>

@@ -47,13 +47,16 @@ export function PaymentPendingCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          <span className="text-primary">$</span> watch check-payment.sh
+        </p>
         <p className="text-muted-foreground">
           Please complete your payment to activate your subscription. If
           you&apos;ve already paid, it may take a few moments to process.
         </p>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Checking payment status...</span>
+          <span>polling for payment confirmation...</span>
         </div>
       </CardContent>
       <CardFooter>

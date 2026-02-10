@@ -15,7 +15,7 @@ function getCalendar(): calendar_v3.Calendar {
     const auth = new google.auth.JWT({
       email: credentials.client_email,
       key: credentials.private_key,
-      scopes: ["https://www.googleapis.com/auth/calendar"],
+      scopes: ["https://www.googleapis.com/auth/calendar.events"],
       subject: process.env.MENTOR_EMAIL,
     })
 

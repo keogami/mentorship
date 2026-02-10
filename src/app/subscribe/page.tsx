@@ -18,7 +18,7 @@ export default async function SubscribePage({
     return (
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-lg mx-auto text-center space-y-6">
-          <h1 className="text-3xl font-bold">Subscribe to Mentorship</h1>
+          <h1 className="cli-prompt text-3xl font-bold">subscribe</h1>
           <div className="rounded-lg border p-6 bg-muted/50">
             <p className="text-sm text-muted-foreground">
               Payment system is not configured. Please contact the
@@ -62,11 +62,11 @@ export default async function SubscribePage({
       <AuthGate callbackUrl={callbackUrl || "/subscribe"}>
         <div className="mx-auto max-w-4xl space-y-8">
           <div className="text-center">
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Choose Your Plan
+            <h1 className="cli-prompt text-3xl font-bold tracking-tight sm:text-4xl">
+              subscribe
             </h1>
             <p className="mt-4 text-lg text-muted-foreground">
-              Select the plan that fits your learning schedule
+              select a plan that fits your schedule
             </p>
           </div>
           <PlanSelection

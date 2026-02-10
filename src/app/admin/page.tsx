@@ -227,9 +227,9 @@ export default async function AdminPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mx-auto max-w-5xl space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Mentor Admin</h1>
+          <h1 className="cli-prompt text-3xl font-bold">admin</h1>
           <p className="text-muted-foreground">
-            Manage your mentorship sessions, subscribers, and settings.
+            manage your mentorship sessions, subscribers, and settings
           </p>
         </div>
 

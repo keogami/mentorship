@@ -35,7 +35,7 @@ function SubscriptionCancelledEmail(data: SubscriptionCancelledData) {
         </Text>
       </Section>
 
-      <Text>Thank you for being part of Mentorship!</Text>
+      <Text>Thank you for being part of keogami&apos;s mentorship.</Text>
     </EmailLayout>
   )
 }
@@ -48,13 +48,13 @@ export async function subscriptionCancelledEmail(data: SubscriptionCancelledData
 }
 
 const heading = {
-  color: "#111",
+  color: "#cdd6f4",
   marginBottom: "24px",
 }
 
 const infoBox = {
-  background: "#f5f5f5",
-  borderRadius: "8px",
+  background: "#313244",
+  borderRadius: "4px",
   padding: "16px",
   margin: "24px 0",
 }

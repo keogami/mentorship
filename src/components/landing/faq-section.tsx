@@ -41,8 +41,8 @@ const faqs = [
 export function FAQSection() {
   return (
     <section className="container mx-auto px-4 py-16 md:py-24">
-      <h2 className="mb-12 text-center text-3xl font-bold">
-        Frequently Asked Questions
+      <h2 className="cli-prompt mb-12 text-center text-3xl font-bold">
+        faq
       </h2>
       <div className="mx-auto max-w-2xl">
         <Accordion type="single" collapsible>
