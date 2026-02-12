@@ -1,5 +1,10 @@
+import type { Metadata } from "next"
 import { AuthGate } from "@/components/auth/auth-gate"
 import { RedeemClient } from "./redeem-client"
+
+export const metadata: Metadata = {
+  title: "redeem coupon",
+}
 
 export default async function RedeemPage({
   searchParams,

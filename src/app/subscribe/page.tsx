@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { and, eq } from "drizzle-orm"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -6,6 +7,10 @@ import { AuthGate } from "@/components/auth/auth-gate"
 import { PlanSelection } from "@/components/subscribe"
 import { db } from "@/lib/db"
 import { subscriptions, users } from "@/lib/db/schema"
+
+export const metadata: Metadata = {
+  title: "subscribe",
+}
 
 export default async function SubscribePage({
   searchParams,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { eq } from "drizzle-orm"
 import Link from "next/link"
 import { auth } from "@/auth"
@@ -19,6 +20,10 @@ import { db } from "@/lib/db"
 import { users } from "@/lib/db/schema"
 import { getActivePack } from "@/lib/packs"
 import { BookingClient } from "./booking-client"
+
+export const metadata: Metadata = {
+  title: "book a session",
+}
 
 export default async function BookPage() {
   const session = await auth()

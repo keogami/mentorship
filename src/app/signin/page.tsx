@@ -1,7 +1,12 @@
+import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { SignInOptions } from "@/components/auth/sign-in-options"
 import { sanitizeCallbackUrl } from "@/lib/auth/sanitize-callback"
+
+export const metadata: Metadata = {
+  title: "sign in",
+}
 
 export default async function SignInPage({
   searchParams,
