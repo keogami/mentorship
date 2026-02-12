@@ -7,7 +7,9 @@
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
-import { adminRoutes, protectedRoutes } from "@/lib/auth/routes"
+
+const protectedRoutes = ["/dashboard", "/sessions"]
+const adminRoutes = ["/admin"]
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
