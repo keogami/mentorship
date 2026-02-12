@@ -5,3 +5,5 @@ procs:
     shell: "pnpm db:studio"
   ngrok:
     shell: "ngrok http 3000"
+  qstash:
+    shell: "npx @upstash/qstash-cli@latest dev"

@@ -1,47 +1,10 @@
 import { and, eq, lt, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
+import { verifySignatureAppRouter } from "@upstash/qstash/nextjs"
 import { db } from "@/lib/db"
 import { sessions } from "@/lib/db/schema"
 
-async function verifyQStashSignature(request: Request): Promise<boolean> {
-  const { Receiver } = await import("@upstash/qstash")
-
-  const signingKey = process.env.QSTASH_CURRENT_SIGNING_KEY
-  const nextSigningKey = process.env.QSTASH_NEXT_SIGNING_KEY
-
-  if (!signingKey || !nextSigningKey) {
-    return false
-  }
-
-  const receiver = new Receiver({
-    currentSigningKey: signingKey,
-    nextSigningKey: nextSigningKey,
-  })
-
-  const signature = request.headers.get("upstash-signature")
-  if (!signature) {
-    return false
-  }
-
-  const body = await request.text()
-  try {
-    await receiver.verify({
-      signature,
-      body,
-    })
-    return true
-  } catch {
-    return false
-  }
-}
-
-export async function POST(request: Request) {
-  const isValid = await verifyQStashSignature(request)
-  if (!isValid) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
-  // Mark sessions as completed if they are past their end time (scheduled_at + 50 minutes)
+async function handler() {
   const result = await db
     .update(sessions)
     .set({ status: "completed" })
@@ -53,8 +16,16 @@ export async function POST(request: Request) {
     )
     .returning({ id: sessions.id })
 
+  if (result.length === 0) {
+    console.log("[complete-sessions] No sessions to complete")
+  } else {
+    console.log(`[complete-sessions] Completed ${result.length} session(s): ${result.map((r) => r.id).join(", ")}`)
+  }
+
   return NextResponse.json({
     completed: result.length,
     sessionIds: result.map((r) => r.id),
   })
 }
+
+export const POST = verifySignatureAppRouter(handler)
