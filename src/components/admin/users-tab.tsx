@@ -217,12 +217,17 @@ export function UsersTab({ users }: UsersTabProps) {
                                     subscription.
                                   </p>
                                   <p className="rounded border p-2 text-sm">
-                                    Estimated refund:{" "}
+                                    Estimated max refund:{" "}
                                     <strong>
                                       {formatPrice(refundEstimate)}
                                     </strong>{" "}
                                     ({unusedSessions} unused sessions x{" "}
                                     {formatPrice(costPerSession)}/session)
+                                    <br />
+                                    <span className="text-muted-foreground text-xs">
+                                      Actual refund may be lower if a discount
+                                      was applied.
+                                    </span>
                                   </p>
                                   <div className="space-y-2">
                                     <Label htmlFor={`reason-${user.id}`}>

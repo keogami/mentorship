@@ -59,9 +59,27 @@ export async function POST(
     plan.sessionsPerPeriod -
       Math.max(0, subscription.sessionsUsedThisPeriod - subscription.carryOverSessions)
   )
-  const costPerSession = Math.floor(plan.priceInr / plan.sessionsPerPeriod)
-  const refundAmountInr = Math.max(0, unusedSessions * costPerSession)
-  const refundAmountPaise = refundAmountInr * 100
+
+  let refundAmountPaise = 0
+
+  if (unusedSessions > 0 && subscription.latestPaymentId) {
+    try {
+      const payment = await getRazorpay().payments.fetch(subscription.latestPaymentId)
+      const paidAmountPaise = typeof payment.amount === "string"
+        ? parseInt(payment.amount, 10)
+        : payment.amount
+      const alreadyRefundedPaise = typeof payment.amount_refunded === "string"
+        ? parseInt(payment.amount_refunded, 10)
+        : (payment.amount_refunded ?? 0)
+      const costPerSessionPaise = Math.floor(paidAmountPaise / plan.sessionsPerPeriod)
+      const calculatedRefundPaise = unusedSessions * costPerSessionPaise
+      refundAmountPaise = Math.min(calculatedRefundPaise, paidAmountPaise - alreadyRefundedPaise)
+      refundAmountPaise = Math.max(0, refundAmountPaise)
+    } catch (err) {
+      console.error("Failed to fetch payment for refund calculation:", err)
+      // Safe fallback: no refund, but subscription still gets cancelled
+    }
+  }
 
   // 4. Cancel Razorpay subscription
   try {
@@ -128,6 +146,7 @@ export async function POST(
   }
 
   // 9. Send termination email to user
+  const refundAmountInr = (refundAmountPaise - (refundAmountPaise % 100)) / 100
   try {
     const emailContent = await mentorCancelledUserEmail({
       userName: user.name,
